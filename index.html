@@ -399,7 +399,7 @@ const INTENTS = [
       const skip = ["a", "words", "word", "for", "it", "palabras", "una", "para"];
       return w && !skip.includes(w) ? { text: `${w}: ${w.toUpperCase().split("").join(", ")}.`, tone: "yes" } : { text: T[lang].spellNeed, tone: "yes" };
     } },
-  { id: "repeat", test: { en: /\b(repeat|say)\b/, hi: /दोहराओ|बोलो/, es: /\b(repite|di)\b/ },
+  { id: "repeat", test: { en: /^(?:please |can you |could you )?(?:say|repeat)\b/, hi: /दोहराओ|बोलो/, es: /^(?:por favor |puedes )?(?:repite|di)\b/ }, // only at the start, so "when you say 10 degrees…" isn't echoed
     run(t, lang) {
       const m = t.match(/(?:repeat after me|say|repeat|repite|di|बोलो|दोहराओ)[:,]?\s+(.+)/);
       return m && !/^(something|anything|words|algo|कुछ)$/.test(m[1]) ? { text: m[1], tone: "yes" } : { text: T[lang].repeatNeed, tone: "yes" };
