@@ -1,0 +1,6 @@
+{
+  "name": "voice-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A free voice robot with a custom wake word that tells you whether it can do something, then does it."
+}

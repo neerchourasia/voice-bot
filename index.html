@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can-Do Robot</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --ink: #1b1f27; --muted: #6a7280;
+    --accent: #3b6cf6; --yes: #1a9d5b; --no: #d1432f; --line: #e1e4ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12141a; --card: #1b1f29; --ink: #e8ebf2; --muted: #9099a8;
+      --accent: #6d8dff; --yes: #3ccf8a; --no: #ff7b66; --line: #2b3140;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center; padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 18px; }
+  h1 { margin: 0; font-size: 20px; text-align: center; }
+  .sub { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 14px; }
+  .sub b { color: var(--ink); }
+
+  .robot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .antenna { width: 4px; height: 20px; background: var(--line); margin-bottom: -12px; position: relative; }
+  .antenna::after { content: ""; position: absolute; top: -9px; left: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: background .2s; }
+  .head {
+    width: 168px; height: 138px; background: var(--card); border: 3px solid var(--line);
+    border-radius: 36px; position: relative; cursor: pointer; transition: box-shadow .25s, border-color .25s;
+  }
+  .head::before, .head::after { content: ""; position: absolute; top: 46px; width: 12px; height: 38px; background: var(--line); border-radius: 6px; }
+  .head::before { left: -14px; } .head::after { right: -14px; }
+  .eyes { position: absolute; top: 38px; left: 0; right: 0; display: flex; justify-content: center; gap: 34px; }
+  .eye { width: 26px; height: 26px; border-radius: 50%; background: var(--muted); animation: blink 5s infinite; transition: background .2s; }
+  .mouth { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); width: 52px; height: 8px; border-radius: 8px; background: var(--ink); }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+  @keyframes talk { 0%, 100% { height: 8px; } 50% { height: 22px; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+  .wake .eye, .wake .antenna::after { background: var(--accent); }
+  .awake .eye, .awake .antenna::after { background: var(--yes); }
+  .awake .head { border-color: var(--yes); box-shadow: 0 0 0 6px color-mix(in srgb, var(--yes) 25%, transparent); }
+  .thinking .eye { animation: pulse .8s infinite; }
+  .speaking .mouth { animation: talk .28s infinite; }
+  .no .eye { background: var(--no); }
+
+  .status { color: var(--muted); font-size: 14px; min-height: 21px; text-align: center; }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  button { font: inherit; cursor: pointer; }
+  .primary { padding: 12px 22px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; }
+  .on .primary { background: var(--no); }
+  .ghost { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 14px; }
+  .ghost:hover { border-color: var(--accent); }
+
+  .log { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; min-height: 110px; max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .msg { padding: 8px 12px; border-radius: 12px; max-width: 88%; }
+  .me { align-self: flex-end; background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .bot { align-self: flex-start; background: var(--bg); }
+  .bot.yes { border-left: 4px solid var(--yes); } .bot.no { border-left: 4px solid var(--no); }
+  .empty { color: var(--muted); text-align: center; margin: auto; font-size: 14px; }
+
+  form.ask { display: flex; gap: 8px; }
+  input, select, textarea { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; min-width: 0; }
+  form.ask input { flex: 1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .chips button { border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
+  .chips button:hover { border-color: var(--accent); }
+
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; }
+  summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+  .set { display: grid; grid-template-columns: 110px 1fr; gap: 10px 12px; align-items: center; padding-bottom: 14px; }
+  .set label { color: var(--muted); font-size: 14px; }
+  .set .full { grid-column: 1 / -1; }
+  h3 { margin: 6px 0 0; font-size: 15px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0; }
+  .abil { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+  .abil small { color: var(--muted); display: block; }
+  .abil button { border: 0; background: none; color: var(--no); font-size: 18px; line-height: 1; }
+  .addform { display: grid; gap: 8px; }
+</style>
+</head>
+<body>
+<main id="app" class="">
+  <div>
+    <h1>Can-Do Robot</h1>
+    <p class="sub" id="sub"></p>
+  </div>
+
+  <div class="robot">
+    <div class="antenna"></div>
+    <div class="head" id="head" title="Tap to talk now"><div class="eyes"><div class="eye"></div><div class="eye"></div></div><div class="mouth"></div></div>
+    <div class="status" id="status"></div>
+    <div class="row">
+      <button class="primary" id="toggle">Start listening</button>
+    </div>
+  </div>
+
+  <div class="log" id="log"><div class="empty">Nothing yet. Start listening and say the wake word, or type below.</div></div>
+
+  <form class="ask" id="form" autocomplete="off">
+    <input id="text" placeholder="…or type it here" aria-label="Type a question">
+    <button class="ghost">Ask</button>
+  </form>
+  <div class="chips" id="chips"></div>
+
+  <details>
+    <summary>Settings</summary>
+    <div class="set">
+      <label for="wake">Wake word</label>
+      <select id="wake">
+        <option value="computer">Computer</option>
+        <option value="cool">Cool Computer</option>
+        <option value="robot">Hey Robot</option>
+      </select>
+      <label for="lang">Language</label>
+      <select id="lang">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="es">Español (Spanish)</option>
+      </select>
+      <label for="voice">Voice</label>
+      <select id="voice"></select>
+      <label for="rate">Speed</label>
+      <input type="range" id="rate" min="0.6" max="1.6" step="0.05">
+      <label for="pitch">Pitch</label>
+      <input type="range" id="pitch" min="0.5" max="1.8" step="0.05">
+      <div class="full row"><button type="button" class="ghost" id="testVoice">Test voice</button></div>
+
+      <h3 class="full">Custom abilities</h3>
+      <p class="hint full">Teach the robot your own “can you…?” answers. It matches any of the keywords you list.</p>
+      <div class="full" id="abilList" style="display:grid;gap:8px"></div>
+      <div class="full addform">
+        <input id="aLabel" placeholder="What it is, e.g. order pizza">
+        <input id="aKeys" placeholder="Keywords, comma separated, e.g. pizza, order food">
+        <textarea id="aReply" rows="2" placeholder="What it says, e.g. Ordering a pizza now (pretend)."></textarea>
+        <select id="aKind">
+          <option value="can">The robot CAN do this</option>
+          <option value="cannot">The robot CANNOT do this</option>
+        </select>
+        <button type="button" class="ghost" id="aAdd">Add ability</button>
+      </div>
+    </div>
+  </details>
+</main>
+
+<script>
+// ============================================================
+//  Brain: free, keyless. Rules + Open-Meteo, Wikipedia, DuckDuckGo, RSS.
+// ============================================================
+const SPEECH = { en: "en-US", hi: "hi-IN", es: "es-ES" };
+const pad = n => String(n).padStart(2, "0");
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+// ---- Wake words: the robot's name follows the chosen one ----
+const WAKE = {
+  computer: { name: "Computer",
+    en: ["computer"], hi: ["कंप्यूटर", "कम्प्यूटर", "computer"], es: ["computadora", "ordenador", "computer"] },
+  cool: { name: "Cool Computer",
+    en: ["cool computer", "cool computers"], hi: ["कूल कंप्यूटर", "कूल कम्प्यूटर", "cool computer"], es: ["cool computer", "cool computadora", "cool ordenador"] },
+  robot: { name: "Hey Robot",
+    en: ["hey robot", "hey robo", "a robot"], hi: ["हे रोबोट", "हे रोबॉट", "हेय रोबोट", "hey robot"], es: ["hey robot", "oye robot", "hola robot"] },
+};
+const norm = s => s.toLowerCase().replace(/[.,!?¿¡।]/g, " ").replace(/\s+/g, " ").trim();
+
+// Returns null if no wake word, else the command spoken after it ("" if none).
+function findWake(text, wakeId, lang) {
+  const t = norm(text);
+  let best = null;
+  for (const a of WAKE[wakeId][lang]) {
+    const i = t.indexOf(a);
+    if (i >= 0 && (!best || i < best.i)) best = { i, len: a.length };
+  }
+  return best ? t.slice(best.i + best.len).replace(/^[\s,]+/, "") : null;
+}
+
+// ---- Strings per language ----
+const WMO = { clear: [0], partly: [1, 2, 3], fog: [45, 48], drizzle: [51, 53, 55, 56, 57], rain: [61, 63, 65, 66, 67, 80, 81, 82], snow: [71, 73, 75, 77, 85, 86], storm: [95, 96, 99] };
+const wmoKey = c => Object.keys(WMO).find(k => WMO[k].includes(c)) || "partly";
+
+const T = {
+  en: {
+    yes: l => `Yes, I can ${l}! Say "go ahead" and I'll do it.`,
+    no: r => `No, sorry, I can't. ${r}`,
+    maybe: l => `Hmm, I don't think I can do that. I can ${l}.`,
+    unknown: "I'm not sure I can do that. Try asking “can you…?”",
+    hello: n => `Hello! I'm ${n}. Ask me “can you tell a joke?” or anything else.`,
+    wake: n => `Say "${n}" to wake me.`, awake: "Yes?", listening: n => `Listening for "${n}"…`,
+    started: n => `I'm listening. Say "${n}" to wake me.`,
+    error: "Sorry, I couldn't reach that service right now.",
+    labels: { joke: "tell you a joke", time: "tell you the time", date: "tell you today's date", coin: "flip a coin", dice: "roll a die", timer: "set a timer", weather: "tell you the weather", news: "read the news headlines", math: "do math", spell: "spell words", repeat: "repeat what you say", search: "search the web for you", wiki: "look things up on Wikipedia" },
+    jokes: ["Why did the robot go on vacation? To recharge its batteries.", "Why was the computer cold? It left its Windows open.", "There are ten kinds of people: those who understand binary, and those who don't.", "I told my computer I needed a break. Now it won't stop sending me vacation ads."],
+    time: d => `It's ${d}.`, date: d => `Today is ${d}.`,
+    heads: "I flipped a coin. It's heads.", tails: "I flipped a coin. It's tails.", dice: n => `I rolled a ${n}.`,
+    timerAsk: "For how long? Try “set a timer for 10 seconds”.", timerSet: (n, u) => `Okay, timer set for ${n} ${u}${n === 1 ? "" : "s"}. Keep this page open.`, timerDone: "Time's up! Your timer is done.",
+    units: { s: "second", m: "minute", h: "hour" },
+    mathNeed: "Sure, give me numbers, like “what is 12 times 7?”", mathOut: (e, v) => `${e} equals ${v}.`,
+    spellNeed: "Which word? Try “spell banana”.", repeatNeed: "Tell me what to say, like “say hello world”.",
+    askCity: "Which city?", weatherOut: (c, d, t, w, hi, lo) => `${c}: ${d}, ${t} degrees, wind ${w} kilometres per hour. Today's high ${hi}, low ${lo}.`,
+    cityNotFound: c => `I couldn't find a city called ${c}.`,
+    wmo: { clear: "clear skies", partly: "partly cloudy", fog: "foggy", drizzle: "light drizzle", rain: "rainy", snow: "snowy", storm: "thunderstorms" },
+    newsIntro: t => `Here are the headlines${t ? " about " + t : ""}.`, newsNone: "I couldn't find any headlines.",
+    wikiNone: t => `I couldn't find anything about ${t}.`, askTopic: "What should I look up?",
+    chips: ["Can you tell me a joke?", "Can you fly?", "What's the weather?", "Read the news", "Who is Albert Einstein?", "What is 12 times 7?", "Set a timer for 10 seconds"],
+  },
+  hi: {
+    yes: l => `हाँ, मैं ${l} सकता हूँ! "शुरू करो" कहिए।`,
+    no: r => `माफ़ कीजिए, मैं ऐसा नहीं कर सकता। ${r}`,
+    maybe: l => `मुझे नहीं लगता कि मैं यह कर सकता हूँ। मैं ${l} सकता हूँ।`,
+    unknown: "मुझे पक्का नहीं पता कि मैं यह कर सकता हूँ। पूछिए “क्या तुम … सकते हो?”",
+    hello: n => `नमस्ते! मैं ${n} हूँ। मुझसे पूछिए “क्या तुम चुटकुला सुना सकते हो?”`,
+    wake: n => `मुझे जगाने के लिए "${n}" कहिए।`, awake: "जी?", listening: n => `"${n}" सुन रहा हूँ…`,
+    started: n => `मैं सुन रहा हूँ। मुझे जगाने के लिए "${n}" कहिए।`,
+    error: "माफ़ कीजिए, अभी वह सेवा नहीं मिल पाई।",
+    labels: { joke: "चुटकुला सुना", time: "समय बता", date: "तारीख बता", coin: "सिक्का उछाल", dice: "पासा फेंक", timer: "टाइमर लगा", weather: "मौसम बता", news: "खबरें सुना", math: "गणित कर", spell: "स्पेलिंग बता", repeat: "आपकी बात दोहरा", search: "वेब पर खोज", wiki: "विकिपीडिया से जानकारी बता" },
+    jokes: ["टीचर: बताओ सबसे तेज़ क्या चलता है? छात्र: जी, मेरा दिमाग़… जब परीक्षा हॉल से बाहर आता हूँ।", "पत्नी: सुनो, मैं कैसी लग रही हूँ? पति: बहुत अच्छी। पत्नी: कुछ और कहो। पति: बहुत ही अच्छी!", "रोबोट छुट्टी पर क्यों गया? अपनी बैटरी चार्ज करने।"],
+    time: d => `अभी ${d} हुए हैं।`, date: d => `आज ${d} है।`,
+    heads: "मैंने सिक्का उछाला। चित आया।", tails: "मैंने सिक्का उछाला। पट आया।", dice: n => `पासे पर ${n} आया।`,
+    timerAsk: "कितनी देर के लिए? कहिए “10 सेकंड का टाइमर लगाओ”।", timerSet: (n, u) => `ठीक है, ${n} ${u} का टाइमर लगा दिया। यह पेज खुला रखिए।`, timerDone: "समय पूरा हुआ! आपका टाइमर खत्म हो गया।",
+    units: { s: "सेकंड", m: "मिनट", h: "घंटे" },
+    mathNeed: "ज़रूर, संख्याएँ बताइए, जैसे “12 गुणा 7 कितना होता है?”", mathOut: (e, v) => `${e} बराबर ${v}।`,
+    spellNeed: "कौन सा शब्द? कहिए “banana की स्पेलिंग बताओ”।", repeatNeed: "बताइए क्या बोलूँ, जैसे “बोलो नमस्ते”।",
+    askCity: "कौन सा शहर?", weatherOut: (c, d, t, w, hi, lo) => `${c}: ${d}, तापमान ${t} डिग्री, हवा ${w} किलोमीटर प्रति घंटा। आज अधिकतम ${hi}, न्यूनतम ${lo}।`,
+    cityNotFound: c => `मुझे ${c} नाम का शहर नहीं मिला।`,
+    wmo: { clear: "साफ़ आसमान", partly: "आंशिक बादल", fog: "कोहरा", drizzle: "हल्की बूंदाबांदी", rain: "बारिश", snow: "बर्फबारी", storm: "आंधी-तूफ़ान" },
+    newsIntro: t => `${t ? t + " की " : ""}सुर्खियाँ ये हैं।`, newsNone: "मुझे कोई खबर नहीं मिली।",
+    wikiNone: t => `मुझे ${t} के बारे में कुछ नहीं मिला।`, askTopic: "क्या खोजूँ?",
+    chips: ["क्या तुम चुटकुला सुना सकते हो?", "क्या तुम उड़ सकते हो?", "मौसम कैसा है?", "खबरें सुनाओ", "अल्बर्ट आइंस्टीन कौन थे?", "12 गुणा 7 कितना होता है?", "10 सेकंड का टाइमर लगाओ"],
+  },
+  es: {
+    yes: l => `Sí, puedo ${l}. Di "adelante" y lo hago.`,
+    no: r => `No, lo siento, no puedo. ${r}`,
+    maybe: l => `Mmm, creo que no puedo hacer eso. Puedo ${l}.`,
+    unknown: "No estoy seguro de poder hacerlo. Prueba preguntando “¿puedes…?”",
+    hello: n => `¡Hola! Soy ${n}. Pregúntame “¿puedes contarme un chiste?”`,
+    wake: n => `Di "${n}" para despertarme.`, awake: "¿Sí?", listening: n => `Esperando "${n}"…`,
+    started: n => `Estoy escuchando. Di "${n}" para despertarme.`,
+    error: "Lo siento, no pude conectar con ese servicio ahora.",
+    labels: { joke: "contarte un chiste", time: "decirte la hora", date: "decirte la fecha", coin: "lanzar una moneda", dice: "tirar un dado", timer: "poner un temporizador", weather: "decirte el clima", news: "leerte las noticias", math: "hacer cálculos", spell: "deletrear palabras", repeat: "repetir lo que digas", search: "buscar en la web", wiki: "consultar Wikipedia" },
+    jokes: ["¿Por qué el robot se fue de vacaciones? Para recargar sus baterías.", "¿Qué le dice un bit a otro? Nos vemos en el bus.", "¿Por qué tenía frío el ordenador? Dejó las ventanas abiertas."],
+    time: d => `Son las ${d}.`, date: d => `Hoy es ${d}.`,
+    heads: "Lancé una moneda. Salió cara.", tails: "Lancé una moneda. Salió cruz.", dice: n => `Saqué un ${n}.`,
+    timerAsk: "¿Por cuánto tiempo? Prueba “pon un temporizador de 10 segundos”.", timerSet: (n, u) => `Listo, temporizador de ${n} ${u}. Mantén esta página abierta.`, timerDone: "¡Se acabó el tiempo! Tu temporizador terminó.",
+    units: { s: "segundos", m: "minutos", h: "horas" },
+    mathNeed: "Claro, dame números, como “¿cuánto es 12 por 7?”", mathOut: (e, v) => `${e} es igual a ${v}.`,
+    spellNeed: "¿Qué palabra? Prueba “deletrea banana”.", repeatNeed: "Dime qué decir, como “di hola mundo”.",
+    askCity: "¿Qué ciudad?", weatherOut: (c, d, t, w, hi, lo) => `${c}: ${d}, ${t} grados, viento a ${w} kilómetros por hora. Máxima de hoy ${hi}, mínima ${lo}.`,
+    cityNotFound: c => `No encontré una ciudad llamada ${c}.`,
+    wmo: { clear: "cielo despejado", partly: "parcialmente nublado", fog: "niebla", drizzle: "llovizna", rain: "lluvia", snow: "nieve", storm: "tormentas" },
+    newsIntro: t => `Estos son los titulares${t ? " sobre " + t : ""}.`, newsNone: "No encontré titulares.",
+    wikiNone: t => `No encontré nada sobre ${t}.`, askTopic: "¿Qué debo buscar?",
+    chips: ["¿Puedes contarme un chiste?", "¿Puedes volar?", "¿Qué tiempo hace?", "Lee las noticias", "¿Quién es Albert Einstein?", "¿Cuánto es 12 por 7?", "Pon un temporizador de 10 segundos"],
+  },
+};
+
+// ---- Intent detection patterns per language (no \b for Hindi: JS \b is ASCII-only) ----
+const CAP_Q = {
+  en: /^(hey robot[, ]*)?(can|could|would|will) you\b|^are you (able|capable)|^do you know how|^is it possible for you/,
+  hi: /(सकते हो|सकती हो|सकते हैं|सकता है|सकती है)\s*$|^क्या (तुम|आप)/,
+  es: /^(puedes|podrías|podrias|eres capaz|sabes|serías capaz)/,
+};
+const GO = {
+  en: /^(go ahead|do it|yes|yeah|sure|please do|ok(ay)?|show me)/,
+  hi: /^(हाँ|हां|शुरू करो|करो|ठीक है|जी)/,
+  es: /^(adelante|sí|si|hazlo|claro|vale)/,
+};
+const BLOCKED_EN = [
+  [/\b(fly|drive|walk|dance|jump)\b/, "I'm a voice in a browser tab, with no body to move."],
+  [/\b(cook|make (me )?(a )?(coffee|tea|food|sandwich|dinner)|clean|laundry|dishes)\b/, "I have no hands, so chores and cooking are out."],
+  [/\b(play|sing|music|song)\b/, "I can't make music, but I can tell you a joke."],
+  [/\b(call|phone|text|email|message)\b/, "I can't contact anyone for you."],
+  [/\b(see|look at|camera|watch)\b/, "I can't see anything, I only listen."],
+];
+
+const evalWords = { "multiplied by": "*", "divided by": "/", plus: "+", minus: "-", times: "*", over: "/", "प्लस": "+", "जोड़": "+", "माइनस": "-", "घटा": "-", "गुणा": "*", "भाग": "/", "más": "+", menos: "-", "dividido por": "/", entre: "/", por: "*" };
+function evalMath(t) {
+  let s = t.replace(/(multiplied by|divided by|dividido por|plus|minus|times|over|प्लस|जोड़|माइनस|घटा|गुणा|भाग|más|menos|entre|por)/g, m => evalWords[m]);
+  s = s.replace(/(\d)\s*x\s*(\d)/g, "$1*$2");
+  const m = s.match(/-?\d+(\.\d+)?(\s*[-+*/]\s*-?\d+(\.\d+)?)+/);
+  if (!m) return null;
+  try {
+    const v = Function('"use strict"; return (' + m[0] + ")")();
+    if (!isFinite(v)) return null;
+    const say = { "+": "+", "-": "-", "*": "×", "/": "÷" };
+    return { expr: m[0].replace(/\s*([-+*/])\s*(?=-?\d)/g, (_, o) => ` ${say[o]} `).trim(), value: Math.round(v * 1e6) / 1e6 };
+  } catch { return null; }
+}
+
+// ---- Network helpers (all free, keyless) ----
+const getJSON = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); };
+
+async function weatherFor(city, lang) {
+  const t = T[lang];
+  const g = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=${lang}`);
+  const p = g.results && g.results[0];
+  if (!p) return { text: t.cityNotFound(city), tone: "no" };
+  const w = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`);
+  const c = w.current, d = w.daily;
+  return { text: t.weatherOut(p.name, t.wmo[wmoKey(c.weather_code)], Math.round(c.temperature_2m), Math.round(c.wind_speed_10m), Math.round(d.temperature_2m_max[0]), Math.round(d.temperature_2m_min[0])), tone: "yes" };
+}
+
+async function newsFor(topic, lang) {
+  const t = T[lang];
+  const j = await getJSON(`/api/news?lang=${lang}${topic ? "&q=" + encodeURIComponent(topic) : ""}`);
+  if (!j.items || !j.items.length) return { text: t.newsNone, tone: "no" };
+  return { text: t.newsIntro(topic) + " " + j.items.slice(0, 3).join(". ") + ".", tone: "yes" };
+}
+
+const firstSentences = (s, n) => (s.match(/[^.!?।]+[.!?।]+/g) || [s]).slice(0, n).join(" ").trim();
+
+async function wikiFor(topic, lang) {
+  const t = T[lang];
+  const s = await getJSON(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=1&format=json&origin=*`);
+  const hit = s.query && s.query.search[0];
+  if (!hit) return { text: t.wikiNone(topic), tone: "no" };
+  const sum = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}?origin=*`);
+  return sum.extract ? { text: firstSentences(sum.extract, 2), tone: "yes" } : { text: t.wikiNone(topic), tone: "no" };
+}
+
+async function searchFor(topic, lang) {
+  try {
+    const j = await getJSON(`/api/search?q=${encodeURIComponent(topic)}`);
+    if (j.answer) return { text: firstSentences(j.answer, 2), tone: "yes" };
+  } catch { /* fall through to Wikipedia */ }
+  return wikiFor(topic, lang);
+}
+
+// ---- Topic / city extraction ----
+const STOP_CITY = {
+  en: "what's whats what is how's hows how tell me the weather forecast temperature like today tomorrow now right please in for at of it rain".split(" "),
+  hi: "मौसम तापमान बारिश कैसा कैसी है में का की बताओ बताइए आज अभी क्या".split(" "),
+  es: "qué que cómo como tiempo clima temperatura hace hay en de el la hoy ahora dime pronóstico lluvia".split(" "),
+};
+const TOPIC_PREFIX = {
+  en: /^.*?\b(who is|who was|what is|what are|tell me about|explain|define|search for|search|look up|google|find out about|wikipedia for|wikipedia)\s+/,
+  hi: /(^|\s)(कौन है|कौन थे|कौन था|क्या है|के बारे में बताओ|के बारे में बताइए|के बारे में|बताओ|बताइए|खोजो|सर्च करो|सर्च)(?=\s|$)/g,
+  es: /^.*?(quién es|quien es|qué es|que es|háblame de|hablame de|cuéntame sobre|cuentame sobre|explica|busca|buscar)\s+/,
+};
+function topicOf(t, lang) {
+  return t.replace(TOPIC_PREFIX[lang], " ").replace(/^(a |an |the |el |la |los |las )/, "").replace(/\s+/g, " ").trim();
+}
+// Whole-word filtering, so city names that contain a stop word (e.g. हैदराबाद) stay intact.
+function cityOf(t, lang) {
+  const stop = new Set(STOP_CITY[lang]);
+  return t.split(" ").filter(w => !stop.has(w)).join(" ").trim();
+}
+function newsTopicOf(t, lang) {
+  const m = lang === "en" ? t.match(/news (?:about|on|for)\s+(.+)/) : lang === "es" ? t.match(/noticias (?:de|sobre)\s+(.+)/) : t.match(/(.+?)\s*(?:की|के बारे में|पर)\s*(?:खबर|समाचार|न्यूज़|न्यूज)/);
+  return m ? m[1].trim() : "";
+}
+
+function unitSec(u) { return /^(hour|घं|hora)/.test(u) ? ["h", 3600] : /^(min|मि)/.test(u) ? ["m", 60] : ["s", 1]; }
+
+// ---- Intents: tried in order; first match wins ----
+let startTimer = () => {}; // set by the UI layer
+const INTENTS = [
+  { id: "timer", test: { en: /\b(timer|alarm|remind)/, hi: /टाइमर|अलार्म/, es: /temporizador|alarma|cronómetro|cronometro/ },
+    run(t, lang) {
+      const m = t.match(/(\d+)\s*(second|sec|minute|min|hour|सेकंड|सेकण्ड|मिनट|घंटे|घंटा|segundo|minuto|hora)/);
+      if (!m) return { text: T[lang].timerAsk, tone: "yes" };
+      const n = +m[1], [k, mult] = unitSec(m[2]);
+      startTimer(n * mult);
+      return { text: T[lang].timerSet(n, T[lang].units[k]), tone: "yes" };
+    } },
+  { id: "weather", test: { en: /\b(weather|forecast|temperature|rain)/, hi: /मौसम|तापमान|बारिश/, es: /clima|tiempo en|qué tiempo|que tiempo|temperatura|lluvia|pronóstico/ },
+    async run(t, lang, ctx) {
+      const city = cityOf(t, lang);
+      if (!city) { ctx.awaiting = "weather"; return { text: T[lang].askCity, tone: "yes" }; }
+      return weatherFor(city, lang);
+    } },
+  { id: "news", test: { en: /\b(news|headlines)/, hi: /समाचार|खबर|न्यूज/, es: /noticias|titulares/ },
+    run: (t, lang) => newsFor(newsTopicOf(t, lang), lang) },
+  { id: "joke", test: { en: /\b(jokes?|funny)\b/, hi: /चुटकुला|जोक|मज़ाक|मजाक/, es: /chiste|broma|gracioso/ },
+    run: (t, lang) => ({ text: pick(T[lang].jokes), tone: "yes" }) },
+  { id: "time", test: { en: /\btime\b/, hi: /समय|टाइम|कितने बजे/, es: /\bhora\b/ },
+    run(t, lang) { const d = new Date().toLocaleTimeString(SPEECH[lang], { hour: "numeric", minute: "2-digit" }); return { text: T[lang].time(d), tone: "yes" }; } },
+  { id: "date", test: { en: /\b(date|today|what day)\b/, hi: /तारीख|दिनांक|कौन सा दिन|आज की/, es: /fecha|qué día|que dia|hoy es/ },
+    run(t, lang) { const d = new Date().toLocaleDateString(SPEECH[lang], { weekday: "long", month: "long", day: "numeric", year: "numeric" }); return { text: T[lang].date(d), tone: "yes" }; } },
+  { id: "coin", test: { en: /\b(coin|flip)\b/, hi: /सिक्का|टॉस|सिक्के/, es: /moneda|lanza/ },
+    run: (t, lang) => ({ text: Math.random() < 0.5 ? T[lang].heads : T[lang].tails, tone: "yes" }) },
+  { id: "dice", test: { en: /\b(dice|die|roll)\b/, hi: /पासा|डाइस/, es: /\bdado\b/ },
+    run: (t, lang) => ({ text: T[lang].dice(1 + Math.floor(Math.random() * 6)), tone: "yes" }) },
+  { id: "spell", test: { en: /\bspell\b/, hi: /स्पेल/, es: /deletre/ },
+    run(t, lang) {
+      const w = (t.match(/(?:spell|deletrea|deletrear)\s+(?:the word\s+|la palabra\s+)?([\p{L}']+)/u) || t.match(/([\p{L}']+)\s+(?:की\s+)?स्पेल/u) || [])[1];
+      const skip = ["a", "words", "word", "for", "it", "palabras", "una", "para"];
+      return w && !skip.includes(w) ? { text: `${w}: ${w.toUpperCase().split("").join(", ")}.`, tone: "yes" } : { text: T[lang].spellNeed, tone: "yes" };
+    } },
+  { id: "repeat", test: { en: /\b(repeat|say)\b/, hi: /दोहराओ|बोलो/, es: /\b(repite|di)\b/ },
+    run(t, lang) {
+      const m = t.match(/(?:repeat after me|say|repeat|repite|di|बोलो|दोहराओ)[:,]?\s+(.+)/);
+      return m && !/^(something|anything|words|algo|कुछ)$/.test(m[1]) ? { text: m[1], tone: "yes" } : { text: T[lang].repeatNeed, tone: "yes" };
+    } },
+  { id: "math", test: { en: /\b(math|calculate|add|subtract|multiply|divide|plus|minus|times)\b|\d\s*[-+*/x]\s*\d/, hi: /गणित|जोड़|घटा|गुणा|भाग|प्लस|माइनस|\d\s*[-+*/x]\s*\d/, es: /cálcul|calcul|suma|resta|dividido|\d\s*[-+*/x]\s*\d|\d\s+(más|menos|por|entre)\s+\d/ },
+    run(t, lang) { const r = evalMath(t); return r ? { text: T[lang].mathOut(r.expr, r.value), tone: "yes" } : { text: T[lang].mathNeed, tone: "yes" }; } },
+  { id: "search", test: { en: /\b(search|look up|google|find out)\b/, hi: /खोजो|सर्च/, es: /\bbusca/ },
+    async run(t, lang) { const q = topicOf(t, lang); return q ? searchFor(q, lang) : { text: T[lang].askTopic, tone: "yes" }; } },
+  { id: "wiki", test: { en: /\b(who is|who was|what is|what are|tell me about|explain|define|wikipedia)\b/, hi: /कौन है|कौन थे|कौन था|क्या है|के बारे में/, es: /quién es|quien es|qué es|que es|háblame de|hablame de|cuéntame sobre|cuentame sobre|explica|wikipedia/ },
+    async run(t, lang) { const q = topicOf(t, lang); return q ? wikiFor(q, lang) : { text: T[lang].askTopic, tone: "yes" }; } },
+];
+
+// ---- Conversation state + the main entry point ----
+const brain = { pending: null, awaiting: null, abilities: [] };
+
+function matchCustom(t) {
+  return brain.abilities.find(a => a.keys.some(k => k && t.includes(k)));
+}
+
+async function answer(raw, lang, wakeId) {
+  const t = norm(raw), tr = T[lang];
+
+  if (brain.awaiting === "weather") {
+    brain.awaiting = null;
+    return weatherFor(cityOf(t, lang) || t, lang);
+  }
+  if (GO[lang].test(t) && brain.pending) {
+    const p = brain.pending; brain.pending = null;
+    return p.custom ? { text: p.custom.reply, tone: "yes" } : p.intent.run(p.text, lang, brain);
+  }
+
+  const custom = matchCustom(t);
+  const intent = custom ? null : INTENTS.find(i => i.test[lang] && i.test[lang].test(t));
+  const isCapQ = CAP_Q[lang].test(t);
+
+  if (isCapQ) {
+    if (custom) {
+      if (custom.kind === "cannot") return { text: tr.no(custom.reply), tone: "no" };
+      brain.pending = { custom };
+      return { text: tr.yes(custom.label), tone: "yes" };
+    }
+    if (intent) { brain.pending = { intent, text: t }; return { text: tr.yes(tr.labels[intent.id]), tone: "yes" }; }
+    if (lang === "en") {
+      const b = BLOCKED_EN.find(([re]) => re.test(t));
+      if (b) return { text: tr.no(b[1]), tone: "no" };
+    }
+    return { text: tr.maybe(Object.values(tr.labels).slice(0, 5).join(", ")), tone: "no" };
+  }
+
+  if (custom) return { text: custom.kind === "cannot" ? tr.no(custom.reply) : custom.reply, tone: custom.kind === "cannot" ? "no" : "yes" };
+  if (intent) return intent.run(t, lang, brain);
+  if (lang === "en" && /\b(hello|hi|hey)\b/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
+  if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
+  if (lang === "es" && /\b(hola|buenas)\b/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
+  return { text: tr.unknown, tone: "no" };
+}
+
+// ============================================================
+//  UI: settings, speech out, wake-word listening
+// ============================================================
+const $ = id => document.getElementById(id);
+const app = $("app"), logEl = $("log"), statusEl = $("status");
+
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, abilities: [] };
+let cfg = { ...DEFAULTS };
+try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
+const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } };
+const syncAbilities = () => { brain.abilities = cfg.abilities.map(a => ({ ...a, keys: a.keys.split(",").map(k => k.trim().toLowerCase()).filter(Boolean) })); };
+syncAbilities();
+
+const tr = () => T[cfg.lang];
+const wakeName = () => WAKE[cfg.wake].name;
+
+// ---- Visual state ----
+function setVisual(...cls) {
+  ["wake", "awake", "thinking", "speaking", "no", "on"].forEach(c => app.classList.remove(c));
+  cls.filter(Boolean).forEach(c => app.classList.add(c));
+  if (listening) app.classList.add("on");
+}
+function addMsg(text, cls) {
+  logEl.querySelector(".empty")?.remove();
+  const d = document.createElement("div");
+  d.className = "msg " + cls; d.textContent = text;
+  logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ---- Speech out ----
+let voices = [];
+function loadVoices() {
+  voices = speechSynthesis.getVoices();
+  const sel = $("voice"), want = SPEECH[cfg.lang].slice(0, 2);
+  sel.innerHTML = "";
+  const auto = new Option("Automatic", ""); sel.add(auto);
+  voices.filter(v => v.lang.toLowerCase().startsWith(want)).forEach(v => sel.add(new Option(`${v.name} (${v.lang})`, v.voiceURI)));
+  sel.value = [...sel.options].some(o => o.value === cfg.voice) ? cfg.voice : "";
+}
+function chunks(text) { return text.match(/[^.!?।]+[.!?।]*\s*/g) || [text]; } // Chrome cuts off long utterances
+
+let speaking = false;
+function speak(text, onDone) {
+  if (!("speechSynthesis" in window)) { onDone && onDone(); return; }
+  speechSynthesis.cancel();
+  speaking = true;
+  const parts = chunks(text).map(s => s.trim()).filter(Boolean);
+  parts.forEach((p, i) => {
+    const u = new SpeechSynthesisUtterance(p);
+    u.lang = SPEECH[cfg.lang]; u.rate = +cfg.rate; u.pitch = +cfg.pitch;
+    const v = voices.find(v => v.voiceURI === cfg.voice) || voices.find(v => v.lang.toLowerCase().startsWith(SPEECH[cfg.lang].slice(0, 2)));
+    if (v) u.voice = v;
+    if (i === parts.length - 1) u.onend = u.onerror = () => { speaking = false; onDone && onDone(); };
+    speechSynthesis.speak(u);
+  });
+}
+
+function beep() {
+  try {
+    const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value = 880;
+    g.gain.setValueAtTime(0.15, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.18);
+    o.start(); o.stop(c.currentTime + 0.2);
+  } catch { /* audio blocked */ }
+}
+
+// ---- Timer ----
+startTimer = seconds => setTimeout(() => { const m = tr().timerDone; addMsg(m, "bot yes"); beep(); speak(m); }, seconds * 1000);
+
+// ---- Listening: wake mode (needs the wake word) vs command mode (next phrase is the command) ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, paused = false, mode = "wake", modeTimer = null;
+
+function setMode(m) {
+  mode = m; clearTimeout(modeTimer);
+  if (m === "command") {
+    setVisual("awake");
+    statusEl.textContent = tr().awake;
+    modeTimer = setTimeout(() => setMode("wake"), 8000);
+  } else {
+    setVisual(listening ? "wake" : "");
+    statusEl.textContent = listening ? tr().listening(wakeName()) : tr().wake(wakeName());
+  }
+}
+
+function spawn() {
+  if (rec) { rec.onend = null; try { rec.abort(); } catch { /* already stopped */ } }
+  rec = new SR();
+  rec.lang = SPEECH[cfg.lang]; rec.continuous = true; rec.interimResults = false;
+  rec.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onHeard(e.results[i][0].transcript);
+  };
+  rec.onerror = e => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      stopListening(); statusEl.textContent = "Microphone blocked. Allow it in the browser, or type instead.";
+    }
+  };
+  rec.onend = () => { if (listening && !paused) setTimeout(() => { try { rec.start(); } catch { /* busy */ } }, 250); };
+  try { rec.start(); } catch { /* busy */ }
+}
+
+function startListening() {
+  if (!SR) { statusEl.textContent = "This browser has no speech recognition. Use Chrome or Edge, or type instead."; return; }
+  listening = true; paused = false; $("toggle").textContent = "Stop listening";
+  spawn(); setMode("wake");
+  const m = tr().started(wakeName()); statusEl.textContent = m; speak(m);
+}
+function stopListening() {
+  listening = false; paused = true; clearTimeout(modeTimer);
+  if (rec) { rec.onend = null; try { rec.abort(); } catch { /* ignore */ } }
+  $("toggle").textContent = "Start listening"; setMode("wake");
+}
+
+function onHeard(text) {
+  if (speaking || paused) return; // ignore the robot hearing itself
+  if (mode === "command") { setMode("wake"); handle(text); return; }
+  const rest = findWake(text, cfg.wake, cfg.lang);
+  if (rest === null) return;
+  if (rest.length > 1) handle(rest);
+  else { beep(); setMode("command"); }
+}
+
+async function handle(text) {
+  text = text.trim(); if (!text) return;
+  addMsg(text, "me");
+  setVisual("thinking");
+  paused = true; if (rec) { rec.onend = null; try { rec.abort(); } catch { /* ignore */ } } // don't listen while thinking/speaking
+  let a;
+  try { a = await answer(text, cfg.lang, cfg.wake); }
+  catch { a = { text: tr().error, tone: "no" }; }
+  addMsg(a.text, "bot " + a.tone);
+  setVisual("speaking", a.tone === "no" ? "no" : "");
+  speak(a.text, () => {
+    paused = false;
+    if (listening) spawn();
+    // Stay awake for an answer when the robot just asked something or offered to go ahead.
+    if (listening && (brain.pending || brain.awaiting)) setMode("command"); else setMode("wake");
+  });
+}
+
+// ---- Wiring ----
+$("toggle").onclick = () => (listening ? stopListening() : startListening());
+$("head").onclick = () => {
+  if (!listening) startListening();
+  beep(); setMode("command");
+};
+$("form").onsubmit = e => { e.preventDefault(); const v = $("text").value; $("text").value = ""; handle(v); };
+
+function renderChips() {
+  $("chips").innerHTML = "";
+  tr().chips.forEach(q => { const b = document.createElement("button"); b.textContent = q; b.onclick = () => handle(q); $("chips").appendChild(b); });
+}
+function renderHeader() {
+  document.documentElement.lang = cfg.lang;
+  $("sub").innerHTML = `Say <b>“${wakeName()}”</b>, then ask “can you…?” and I’ll tell you if I can.`;
+  setMode(mode);
+}
+
+// ---- Settings ----
+function renderAbilities() {
+  const box = $("abilList"); box.innerHTML = "";
+  cfg.abilities.forEach((a, i) => {
+    const d = document.createElement("div"); d.className = "abil";
+    const info = document.createElement("div");
+    info.innerHTML = "<b></b><small></small>";
+    info.firstChild.textContent = (a.kind === "can" ? "✅ " : "⛔ ") + a.label;
+    info.lastChild.textContent = a.keys;
+    const x = document.createElement("button"); x.textContent = "×"; x.title = "Remove";
+    x.onclick = () => { cfg.abilities.splice(i, 1); save(); syncAbilities(); renderAbilities(); };
+    d.append(info, x); box.appendChild(d);
+  });
+}
+$("aAdd").onclick = () => {
+  const label = $("aLabel").value.trim(), keys = $("aKeys").value.trim(), reply = $("aReply").value.trim();
+  if (!label || !keys || !reply) return;
+  cfg.abilities.push({ label, keys, reply, kind: $("aKind").value });
+  ["aLabel", "aKeys", "aReply"].forEach(id => ($(id).value = ""));
+  save(); syncAbilities(); renderAbilities();
+};
+
+$("wake").value = cfg.wake; $("lang").value = cfg.lang; $("rate").value = cfg.rate; $("pitch").value = cfg.pitch;
+$("wake").onchange = e => { cfg.wake = e.target.value; save(); renderHeader(); };
+$("lang").onchange = e => {
+  cfg.lang = e.target.value; cfg.voice = ""; save(); loadVoices(); renderChips(); renderHeader();
+  if (listening) spawn();
+};
+$("voice").onchange = e => { cfg.voice = e.target.value; save(); };
+$("rate").oninput = e => { cfg.rate = e.target.value; save(); };
+$("pitch").oninput = e => { cfg.pitch = e.target.value; save(); };
+$("testVoice").onclick = () => speak(tr().hello(wakeName()));
+
+if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+renderChips(); renderAbilities(); renderHeader();
+if (!SR) statusEl.textContent = "This browser has no speech recognition (use Chrome or Edge). You can still type.";
+</script>
+</body>
+</html>
