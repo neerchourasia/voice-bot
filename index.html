@@ -98,6 +98,7 @@
     <div class="status" id="status"></div>
     <div class="row">
       <button class="primary" id="toggle">Start listening</button>
+      <button class="ghost" id="laughBtn" title="Make it laugh">😂 Laugh</button>
     </div>
   </div>
 
@@ -195,7 +196,7 @@ const T = {
     wake: n => `Say "${n}" to wake me.`, awake: "Yes?", listening: n => `Listening for "${n}"…`,
     started: n => `I'm listening. Say "${n}" to wake me.`,
     error: "Sorry, I couldn't reach that service right now.",
-    labels: { joke: "tell you a joke", time: "tell you the time", date: "tell you today's date", coin: "flip a coin", dice: "roll a die", timer: "set a timer", weather: "tell you the weather", news: "read the news headlines", math: "do math", spell: "spell words", repeat: "repeat what you say", search: "search the web for you", wiki: "look things up on Wikipedia" },
+    labels: { joke: "tell you a joke", laugh: "laugh", time: "tell you the time", date: "tell you today's date", coin: "flip a coin", dice: "roll a die", timer: "set a timer", weather: "tell you the weather", news: "read the news headlines", math: "do math", spell: "spell words", repeat: "repeat what you say", search: "search the web for you", wiki: "look things up on Wikipedia" },
     jokes: ["Why did the robot go on vacation? To recharge its batteries.", "Why was the computer cold? It left its Windows open.", "There are ten kinds of people: those who understand binary, and those who don't.", "I told my computer I needed a break. Now it won't stop sending me vacation ads."],
     time: d => `It's ${d}.`, date: d => `Today is ${d}.`,
     heads: "I flipped a coin. It's heads.", tails: "I flipped a coin. It's tails.", dice: n => `I rolled a ${n}.`,
@@ -208,7 +209,7 @@ const T = {
     wmo: { clear: "clear skies", partly: "partly cloudy", fog: "foggy", drizzle: "light drizzle", rain: "rainy", snow: "snowy", storm: "thunderstorms" },
     newsIntro: t => `Here are the headlines${t ? " about " + t : ""}.`, newsNone: "I couldn't find any headlines.",
     wikiNone: t => `I couldn't find anything about ${t}.`, askTopic: "What should I look up?",
-    chips: ["Can you tell me a joke?", "Can you fly?", "What's the weather?", "Read the news", "Who is Albert Einstein?", "What is 12 times 7?", "Set a timer for 10 seconds"],
+    chips: ["Can you tell me a joke?", "Can you laugh?", "Can you fly?", "What's the weather?", "Read the news", "Who is Albert Einstein?", "What is 12 times 7?", "Set a timer for 10 seconds"],
   },
   hi: {
     yes: l => `हाँ, मैं ${l} सकता हूँ! "शुरू करो" कहिए।`,
@@ -219,7 +220,7 @@ const T = {
     wake: n => `मुझे जगाने के लिए "${n}" कहिए।`, awake: "जी?", listening: n => `"${n}" सुन रहा हूँ…`,
     started: n => `मैं सुन रहा हूँ। मुझे जगाने के लिए "${n}" कहिए।`,
     error: "माफ़ कीजिए, अभी वह सेवा नहीं मिल पाई।",
-    labels: { joke: "चुटकुला सुना", time: "समय बता", date: "तारीख बता", coin: "सिक्का उछाल", dice: "पासा फेंक", timer: "टाइमर लगा", weather: "मौसम बता", news: "खबरें सुना", math: "गणित कर", spell: "स्पेलिंग बता", repeat: "आपकी बात दोहरा", search: "वेब पर खोज", wiki: "विकिपीडिया से जानकारी बता" },
+    labels: { joke: "चुटकुला सुना", laugh: "हँस", time: "समय बता", date: "तारीख बता", coin: "सिक्का उछाल", dice: "पासा फेंक", timer: "टाइमर लगा", weather: "मौसम बता", news: "खबरें सुना", math: "गणित कर", spell: "स्पेलिंग बता", repeat: "आपकी बात दोहरा", search: "वेब पर खोज", wiki: "विकिपीडिया से जानकारी बता" },
     jokes: ["टीचर: बताओ सबसे तेज़ क्या चलता है? छात्र: जी, मेरा दिमाग़… जब परीक्षा हॉल से बाहर आता हूँ।", "पत्नी: सुनो, मैं कैसी लग रही हूँ? पति: बहुत अच्छी। पत्नी: कुछ और कहो। पति: बहुत ही अच्छी!", "रोबोट छुट्टी पर क्यों गया? अपनी बैटरी चार्ज करने।"],
     time: d => `अभी ${d} हुए हैं।`, date: d => `आज ${d} है।`,
     heads: "मैंने सिक्का उछाला। चित आया।", tails: "मैंने सिक्का उछाला। पट आया।", dice: n => `पासे पर ${n} आया।`,
@@ -232,7 +233,7 @@ const T = {
     wmo: { clear: "साफ़ आसमान", partly: "आंशिक बादल", fog: "कोहरा", drizzle: "हल्की बूंदाबांदी", rain: "बारिश", snow: "बर्फबारी", storm: "आंधी-तूफ़ान" },
     newsIntro: t => `${t ? t + " की " : ""}सुर्खियाँ ये हैं।`, newsNone: "मुझे कोई खबर नहीं मिली।",
     wikiNone: t => `मुझे ${t} के बारे में कुछ नहीं मिला।`, askTopic: "क्या खोजूँ?",
-    chips: ["क्या तुम चुटकुला सुना सकते हो?", "क्या तुम उड़ सकते हो?", "मौसम कैसा है?", "खबरें सुनाओ", "अल्बर्ट आइंस्टीन कौन थे?", "12 गुणा 7 कितना होता है?", "10 सेकंड का टाइमर लगाओ"],
+    chips: ["क्या तुम चुटकुला सुना सकते हो?", "क्या तुम हँस सकते हो?", "क्या तुम उड़ सकते हो?", "मौसम कैसा है?", "खबरें सुनाओ", "अल्बर्ट आइंस्टीन कौन थे?", "12 गुणा 7 कितना होता है?", "10 सेकंड का टाइमर लगाओ"],
   },
   es: {
     yes: l => `Sí, puedo ${l}. Di "adelante" y lo hago.`,
@@ -243,7 +244,7 @@ const T = {
     wake: n => `Di "${n}" para despertarme.`, awake: "¿Sí?", listening: n => `Esperando "${n}"…`,
     started: n => `Estoy escuchando. Di "${n}" para despertarme.`,
     error: "Lo siento, no pude conectar con ese servicio ahora.",
-    labels: { joke: "contarte un chiste", time: "decirte la hora", date: "decirte la fecha", coin: "lanzar una moneda", dice: "tirar un dado", timer: "poner un temporizador", weather: "decirte el clima", news: "leerte las noticias", math: "hacer cálculos", spell: "deletrear palabras", repeat: "repetir lo que digas", search: "buscar en la web", wiki: "consultar Wikipedia" },
+    labels: { joke: "contarte un chiste", laugh: "reírme", time: "decirte la hora", date: "decirte la fecha", coin: "lanzar una moneda", dice: "tirar un dado", timer: "poner un temporizador", weather: "decirte el clima", news: "leerte las noticias", math: "hacer cálculos", spell: "deletrear palabras", repeat: "repetir lo que digas", search: "buscar en la web", wiki: "consultar Wikipedia" },
     jokes: ["¿Por qué el robot se fue de vacaciones? Para recargar sus baterías.", "¿Qué le dice un bit a otro? Nos vemos en el bus.", "¿Por qué tenía frío el ordenador? Dejó las ventanas abiertas."],
     time: d => `Son las ${d}.`, date: d => `Hoy es ${d}.`,
     heads: "Lancé una moneda. Salió cara.", tails: "Lancé una moneda. Salió cruz.", dice: n => `Saqué un ${n}.`,
@@ -256,7 +257,7 @@ const T = {
     wmo: { clear: "cielo despejado", partly: "parcialmente nublado", fog: "niebla", drizzle: "llovizna", rain: "lluvia", snow: "nieve", storm: "tormentas" },
     newsIntro: t => `Estos son los titulares${t ? " sobre " + t : ""}.`, newsNone: "No encontré titulares.",
     wikiNone: t => `No encontré nada sobre ${t}.`, askTopic: "¿Qué debo buscar?",
-    chips: ["¿Puedes contarme un chiste?", "¿Puedes volar?", "¿Qué tiempo hace?", "Lee las noticias", "¿Quién es Albert Einstein?", "¿Cuánto es 12 por 7?", "Pon un temporizador de 10 segundos"],
+    chips: ["¿Puedes contarme un chiste?", "¿Puedes reír?", "¿Puedes volar?", "¿Qué tiempo hace?", "Lee las noticias", "¿Quién es Albert Einstein?", "¿Cuánto es 12 por 7?", "Pon un temporizador de 10 segundos"],
   },
 };
 
@@ -377,8 +378,10 @@ const INTENTS = [
     } },
   { id: "news", test: { en: /\b(news|headlines)/, hi: /समाचार|खबर|न्यूज/, es: /noticias|titulares/ },
     run: (t, lang) => newsFor(newsTopicOf(t, lang), lang) },
+  { id: "laugh", test: { en: /\b(laugh|giggle|chuckle|haha)/, hi: /हंस|हँस|हसो|लाफ/, es: /\b(rie|ríe|ríete|reír|reir|risa|carcajada)/ },
+    run: () => ({ text: "Ha ha ha ha!", tone: "yes", laugh: true, silent: true }) },
   { id: "joke", test: { en: /\b(jokes?|funny)\b/, hi: /चुटकुला|जोक|मज़ाक|मजाक/, es: /chiste|broma|gracioso/ },
-    run: (t, lang) => ({ text: pick(T[lang].jokes), tone: "yes" }) },
+    run: (t, lang) => ({ text: pick(T[lang].jokes), tone: "yes", laugh: true }) }, // the robot laughs at its own jokes
   { id: "time", test: { en: /\btime\b/, hi: /समय|टाइम|कितने बजे/, es: /\bhora\b/ },
     run(t, lang) { const d = new Date().toLocaleTimeString(SPEECH[lang], { hour: "numeric", minute: "2-digit" }); return { text: T[lang].time(d), tone: "yes" }; } },
   { id: "date", test: { en: /\b(date|today|what day)\b/, hi: /तारीख|दिनांक|कौन सा दिन|आज की/, es: /fecha|qué día|que dia|hoy es/ },
@@ -480,7 +483,7 @@ function addMsg(text, cls) {
   if (cls.startsWith("bot")) {
     const b = document.createElement("button");
     b.className = "replay"; b.textContent = "🔊"; b.title = "Say it again";
-    b.onclick = () => { const was = cfg.speakReplies; cfg.speakReplies = true; speak(text); cfg.speakReplies = was; };
+    b.onclick = () => { const was = cfg.speakReplies; cfg.speakReplies = true; cls.includes("laughmsg") ? laugh() : speak(text); cfg.speakReplies = was; };
     d.append(" ", b);
   }
   logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
@@ -529,6 +532,41 @@ function beep() {
     g.gain.setValueAtTime(0.15, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.18);
     o.start(); o.stop(c.currentTime + 0.2);
   } catch { /* audio blocked */ }
+}
+
+// ---- Laugh: synthesised with Web Audio (sawtooth "voice" through vowel formants, plus a breathy "h") ----
+function laugh(n = 5) {
+  if (!cfg.speakReplies) return 0;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+    const master = ctx.createGain(); master.gain.value = 0.55; master.connect(ctx.destination);
+    const noise = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+    const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    const t0 = ctx.currentTime + 0.05;
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * 0.19, f = 290 - i * 13 + Math.random() * 12, amp = 1 - i * 0.11;
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(amp, t + 0.03);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      const osc = ctx.createOscillator(); osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(f * 1.18, t); osc.frequency.exponentialRampToValueAtTime(f, t + 0.13);
+      osc.connect(env);
+      [[800, 1], [1250, 0.7], [2600, 0.3]].forEach(([hz, gain]) => { // the "aah" vowel
+        const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = hz; bp.Q.value = 5;
+        const g = ctx.createGain(); g.gain.value = gain;
+        env.connect(bp); bp.connect(g); g.connect(master);
+      });
+      osc.start(t); osc.stop(t + 0.18);
+      const br = ctx.createBufferSource(); br.buffer = noise; // the breathy "h"
+      const hp = ctx.createBiquadFilter(); hp.type = "bandpass"; hp.frequency.value = 3200; hp.Q.value = 0.8;
+      const bg = ctx.createGain(); bg.gain.setValueAtTime(0.25 * amp, t); bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      br.connect(hp); hp.connect(bg); bg.connect(master); br.start(t);
+    }
+    const ms = (0.05 + n * 0.19 + 0.2) * 1000;
+    setTimeout(() => ctx.close(), ms + 200);
+    return ms;
+  } catch { return 0; }
 }
 
 // ---- Timer ----
@@ -595,14 +633,20 @@ async function handle(text) {
   let a;
   try { a = await answer(text, cfg.lang, cfg.wake); }
   catch { a = { text: tr().error, tone: "no" }; }
-  addMsg(a.text, "bot " + a.tone);
+  addMsg(a.text, "bot " + a.tone + (a.silent ? " laughmsg" : ""));
   setVisual("speaking", a.tone === "no" ? "no" : "");
-  speak(a.text, () => {
+  const after = () => {
     paused = false;
     if (listening) spawn();
     // Stay awake for an answer when the robot just asked something or offered to go ahead.
     if (listening && (brain.pending || brain.awaiting)) setMode("command"); else setMode("wake");
-  });
+  };
+  const finish = () => { // laugh (mouth moving, mic still paused) before going back to listening
+    if (!a.laugh) return after();
+    setVisual("speaking");
+    setTimeout(after, laugh());
+  };
+  if (a.silent) finish(); else speak(a.text, finish);
 }
 
 // ---- Wiring ----
@@ -611,6 +655,7 @@ $("head").onclick = () => {
   if (!listening) startListening();
   beep(); setMode("command");
 };
+$("laughBtn").onclick = () => { setVisual("speaking"); setTimeout(() => setMode(mode), laugh() || 300); };
 $("form").onsubmit = e => { e.preventDefault(); const v = $("text").value; $("text").value = ""; handle(v); };
 
 function renderChips() {
