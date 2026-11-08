@@ -127,6 +127,8 @@
       </select>
       <label for="speakReplies">Speak replies</label>
       <input type="checkbox" id="speakReplies" style="justify-self:start">
+      <label for="autoListen">Always listening</label>
+      <input type="checkbox" id="autoListen" style="justify-self:start">
       <label for="voice">Voice</label>
       <select id="voice"></select>
       <label for="rate">Speed</label>
@@ -169,7 +171,8 @@ const WAKE = {
   robot: { name: "Hey Robot",
     en: ["hey robot", "hey robo", "a robot"], hi: ["हे रोबोट", "हे रोबॉट", "हेय रोबोट", "hey robot"], es: ["hey robot", "oye robot", "hola robot"] },
 };
-const norm = s => s.toLowerCase().replace(/[.,!?¿¡।]/g, " ").replace(/\s+/g, " ").trim();
+// Punctuation becomes a space, except dots and commas inside numbers (3.5, 1,000).
+const norm = s => s.toLowerCase().replace(/(?<!\d)[.,]|[.,](?!\d)|[!?¿¡।]/g, " ").replace(/\s+/g, " ").trim();
 
 // Returns null if no wake word, else the command spoken after it ("" if none).
 function findWake(text, wakeId, lang) {
@@ -373,7 +376,7 @@ const INTENTS = [
   { id: "weather", test: { en: /\b(weather|forecast|temperature|rain)/, hi: /मौसम|तापमान|बारिश/, es: /clima|tiempo en|qué tiempo|que tiempo|temperatura|lluvia|pronóstico/ },
     async run(t, lang, ctx) {
       const city = cityOf(t, lang);
-      if (!city) { ctx.awaiting = "weather"; return { text: T[lang].askCity, tone: "yes" }; }
+      if (!city) { ctx.awaiting = { id: "weather" }; return { text: T[lang].askCity, tone: "yes" }; }
       return weatherFor(city, lang);
     } },
   { id: "news", test: { en: /\b(news|headlines)/, hi: /समाचार|खबर|न्यूज/, es: /noticias|titulares/ },
@@ -410,7 +413,9 @@ const INTENTS = [
 ];
 
 // ---- Conversation state + the main entry point ----
-const brain = { pending: null, awaiting: null, abilities: [] };
+const brain = { pending: null, awaiting: null, abilities: [], fallback: null };
+// Follow-up handlers for when the robot asked a question: id -> (text, lang, state) => answer | null
+const AWAIT = { weather: (t, lang) => weatherFor(cityOf(t, lang) || t, lang) };
 
 function matchCustom(t) {
   return brain.abilities.find(a => a.keys.some(k => k && t.includes(k)));
@@ -419,9 +424,11 @@ function matchCustom(t) {
 async function answer(raw, lang, wakeId) {
   const t = norm(raw), tr = T[lang];
 
-  if (brain.awaiting === "weather") {
-    brain.awaiting = null;
-    return weatherFor(cityOf(t, lang) || t, lang);
+  if (brain.awaiting) {
+    const st = brain.awaiting; brain.awaiting = null;
+    // A fresh command or "can you…?" question beats the pending follow-up.
+    const interrupts = CAP_Q[lang].test(t) || INTENTS.some(i => i.test[lang] && i.test[lang].test(t));
+    if (!interrupts) { const r = await AWAIT[st.id](t, lang, st); if (r) return r; }
   }
   if (GO[lang].test(t) && brain.pending) {
     const p = brain.pending; brain.pending = null;
@@ -443,6 +450,8 @@ async function answer(raw, lang, wakeId) {
       const b = BLOCKED_EN.find(([re]) => re.test(t));
       if (b) return { text: tr.no(b[1]), tone: "no" };
     }
+    const chat = brain.fallback && (await brain.fallback(raw, lang)); // open-ended chat, if the server has a key
+    if (chat) return chat;
     return { text: tr.maybe(Object.values(tr.labels).slice(0, 5).join(", ")), tone: "no" };
   }
 
@@ -451,16 +460,21 @@ async function answer(raw, lang, wakeId) {
   if (lang === "en" && /\b(hello|hi|hey)\b/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
   if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
   if (lang === "es" && /\b(hola|buenas)\b/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
+  const chat = brain.fallback && (await brain.fallback(raw, lang));
+  if (chat) return chat;
   return { text: tr.unknown, tone: "no" };
 }
 
+</script>
+<script src="abilities.js"></script>
+<script>
 // ============================================================
 //  UI: settings, speech out, wake-word listening
 // ============================================================
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, abilities: [] };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, abilities: [] };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } };
@@ -476,7 +490,7 @@ function setVisual(...cls) {
   cls.filter(Boolean).forEach(c => app.classList.add(c));
   if (listening) app.classList.add("on");
 }
-function addMsg(text, cls) {
+function addMsg(text, cls, link) {
   logEl.querySelector(".empty")?.remove();
   const d = document.createElement("div");
   d.className = "msg " + cls; d.textContent = text;
@@ -485,6 +499,11 @@ function addMsg(text, cls) {
     b.className = "replay"; b.textContent = "🔊"; b.title = "Say it again";
     b.onclick = () => { const was = cfg.speakReplies; cfg.speakReplies = true; cls.includes("laughmsg") ? laugh() : speak(text); cfg.speakReplies = was; };
     d.append(" ", b);
+  }
+  if (link) {
+    const a = document.createElement("a");
+    a.href = link; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open ↗"; a.style.marginLeft = "6px";
+    d.append(a);
   }
   logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
 }
@@ -503,17 +522,20 @@ function chunks(text) { return text.match(/[^.!?।]+[.!?।]*\s*/g) || [text]; 
 
 let speaking = false;
 const live = []; // keep references: Chrome can garbage-collect an utterance mid-speech and drop its events
-function speak(text, onDone) {
+function speak(what, onDone) {
   if (!("speechSynthesis" in window) || !cfg.speakReplies) { onDone && onDone(); return; }
   speechSynthesis.cancel(); speechSynthesis.resume(); // resume() un-sticks Chrome's queue when it was left paused
   speaking = true; live.length = 0;
   let finished = false, guard = null;
   const finish = () => { if (finished) return; finished = true; clearTimeout(guard); speaking = false; onDone && onDone(); };
-  const parts = chunks(text).map(s => s.trim()).filter(Boolean);
-  const v = voices.find(v => v.voiceURI === cfg.voice) || voices.find(v => v.lang.toLowerCase().startsWith(SPEECH[cfg.lang].slice(0, 2)));
+  // A reply is one string, or segments in different languages (e.g. a translation).
+  const segs = typeof what === "string" ? [{ text: what, lang: cfg.lang }] : what;
+  const parts = segs.flatMap(s => chunks(s.text).map(p => ({ text: p.trim(), lang: s.lang }))).filter(p => p.text);
   parts.forEach((p, i) => {
-    const u = new SpeechSynthesisUtterance(p);
-    u.lang = SPEECH[cfg.lang]; u.rate = +cfg.rate; u.pitch = +cfg.pitch;
+    const tag = SPEECH[p.lang] || SPEECH[cfg.lang];
+    const u = new SpeechSynthesisUtterance(p.text);
+    u.lang = tag; u.rate = +cfg.rate; u.pitch = +cfg.pitch;
+    const v = (p.lang === cfg.lang && voices.find(v => v.voiceURI === cfg.voice)) || voices.find(v => v.lang.toLowerCase().startsWith(tag.slice(0, 2)));
     if (v) u.voice = v;
     if (i === 0) u.onstart = () => clearTimeout(guard);
     if (i === parts.length - 1) u.onend = u.onerror = finish;
@@ -570,7 +592,7 @@ function laugh(n = 5) {
 }
 
 // ---- Timer ----
-startTimer = seconds => setTimeout(() => { const m = tr().timerDone; addMsg(m, "bot yes"); beep(); speak(m); }, seconds * 1000);
+startTimer = (seconds, text) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); beep(); speak(m); }, seconds * 1000);
 
 // ---- Listening: wake mode (needs the wake word) vs command mode (next phrase is the command) ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -604,11 +626,13 @@ function spawn() {
   try { rec.start(); } catch { /* busy */ }
 }
 
-function startListening() {
+function startListening(quiet) {
   if (!SR) { statusEl.textContent = "This browser has no speech recognition. Use Chrome or Edge, or type instead."; return; }
+  if (listening) return;
   listening = true; paused = false; $("toggle").textContent = "Stop listening";
   spawn(); setMode("wake");
-  const m = tr().started(wakeName()); statusEl.textContent = m; speak(m);
+  const m = tr().started(wakeName()); statusEl.textContent = m;
+  if (!quiet) speak(m); // a greeting needs a user gesture, so the automatic start stays silent
 }
 function stopListening() {
   listening = false; paused = true; clearTimeout(modeTimer);
@@ -633,7 +657,11 @@ async function handle(text) {
   let a;
   try { a = await answer(text, cfg.lang, cfg.wake); }
   catch { a = { text: tr().error, tone: "no" }; }
-  addMsg(a.text, "bot " + a.tone + (a.silent ? " laughmsg" : ""));
+  addMsg(a.text, "bot " + a.tone + (a.silent ? " laughmsg" : ""), a.link);
+  if (a.openUrl) { // "noopener" would make window.open return null, so detach the opener by hand
+    const w = window.open(a.openUrl, "_blank");
+    if (w) w.opener = null; else statusEl.textContent = X[cfg.lang].popup;
+  }
   setVisual("speaking", a.tone === "no" ? "no" : "");
   const after = () => {
     paused = false;
@@ -646,11 +674,20 @@ async function handle(text) {
     setVisual("speaking");
     setTimeout(after, laugh());
   };
-  if (a.silent) finish(); else speak(a.text, finish);
+  if (a.silent) finish(); else speak(a.segments || a.text, finish);
 }
 
 // ---- Wiring ----
-$("toggle").onclick = () => (listening ? stopListening() : startListening());
+let userStopped = false;
+$("toggle").onclick = () => { if (listening) { userStopped = true; stopListening(); } else { userStopped = false; startListening(); } };
+// Always listening: start on load; if the browser wants a gesture first, the first click starts it.
+function autoStart(e) {
+  if (e && e.target && e.target.closest && e.target.closest("#toggle")) return;
+  if (cfg.autoListen && !listening && !userStopped && SR) startListening(!e);
+}
+window.addEventListener("load", () => autoStart());
+document.addEventListener("click", autoStart, true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && listening && !paused) spawn(); });
 $("head").onclick = () => {
   if (!listening) startListening();
   beep(); setMode("command");
@@ -696,6 +733,8 @@ $("lang").onchange = e => {
   cfg.lang = e.target.value; cfg.voice = ""; save(); loadVoices(); renderChips(); renderHeader();
   if (listening) spawn();
 };
+$("autoListen").checked = cfg.autoListen;
+$("autoListen").onchange = e => { cfg.autoListen = e.target.checked; save(); if (cfg.autoListen) autoStart(); };
 $("speakReplies").checked = cfg.speakReplies;
 $("speakReplies").onchange = e => { cfg.speakReplies = e.target.checked; save(); if (!cfg.speakReplies) speechSynthesis.cancel(); };
 $("voice").onchange = e => { cfg.voice = e.target.value; save(); };
