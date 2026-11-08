@@ -61,6 +61,8 @@
   .me { align-self: flex-end; background: color-mix(in srgb, var(--accent) 16%, transparent); }
   .bot { align-self: flex-start; background: var(--bg); }
   .bot.yes { border-left: 4px solid var(--yes); } .bot.no { border-left: 4px solid var(--no); }
+  .replay { border: 0; background: none; padding: 0 2px; font-size: 14px; opacity: .6; }
+  .replay:hover { opacity: 1; }
   .empty { color: var(--muted); text-align: center; margin: auto; font-size: 14px; }
 
   form.ask { display: flex; gap: 8px; }
@@ -122,6 +124,8 @@
         <option value="hi">हिन्दी (Hindi)</option>
         <option value="es">Español (Spanish)</option>
       </select>
+      <label for="speakReplies">Speak replies</label>
+      <input type="checkbox" id="speakReplies" style="justify-self:start">
       <label for="voice">Voice</label>
       <select id="voice"></select>
       <label for="rate">Speed</label>
@@ -453,7 +457,7 @@ async function answer(raw, lang, wakeId) {
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, abilities: [] };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, abilities: [] };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } };
@@ -473,6 +477,12 @@ function addMsg(text, cls) {
   logEl.querySelector(".empty")?.remove();
   const d = document.createElement("div");
   d.className = "msg " + cls; d.textContent = text;
+  if (cls.startsWith("bot")) {
+    const b = document.createElement("button");
+    b.className = "replay"; b.textContent = "🔊"; b.title = "Say it again";
+    b.onclick = () => { const was = cfg.speakReplies; cfg.speakReplies = true; speak(text); cfg.speakReplies = was; };
+    d.append(" ", b);
+  }
   logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
 }
 
@@ -489,19 +499,27 @@ function loadVoices() {
 function chunks(text) { return text.match(/[^.!?।]+[.!?।]*\s*/g) || [text]; } // Chrome cuts off long utterances
 
 let speaking = false;
+const live = []; // keep references: Chrome can garbage-collect an utterance mid-speech and drop its events
 function speak(text, onDone) {
-  if (!("speechSynthesis" in window)) { onDone && onDone(); return; }
-  speechSynthesis.cancel();
-  speaking = true;
+  if (!("speechSynthesis" in window) || !cfg.speakReplies) { onDone && onDone(); return; }
+  speechSynthesis.cancel(); speechSynthesis.resume(); // resume() un-sticks Chrome's queue when it was left paused
+  speaking = true; live.length = 0;
+  let finished = false, guard = null;
+  const finish = () => { if (finished) return; finished = true; clearTimeout(guard); speaking = false; onDone && onDone(); };
   const parts = chunks(text).map(s => s.trim()).filter(Boolean);
+  const v = voices.find(v => v.voiceURI === cfg.voice) || voices.find(v => v.lang.toLowerCase().startsWith(SPEECH[cfg.lang].slice(0, 2)));
   parts.forEach((p, i) => {
     const u = new SpeechSynthesisUtterance(p);
     u.lang = SPEECH[cfg.lang]; u.rate = +cfg.rate; u.pitch = +cfg.pitch;
-    const v = voices.find(v => v.voiceURI === cfg.voice) || voices.find(v => v.lang.toLowerCase().startsWith(SPEECH[cfg.lang].slice(0, 2)));
     if (v) u.voice = v;
-    if (i === parts.length - 1) u.onend = u.onerror = () => { speaking = false; onDone && onDone(); };
-    speechSynthesis.speak(u);
+    if (i === 0) u.onstart = () => clearTimeout(guard);
+    if (i === parts.length - 1) u.onend = u.onerror = finish;
+    live.push(u);
   });
+  // A speak() straight after cancel() is silently dropped in some Chrome builds, so wait a beat.
+  setTimeout(() => live.forEach(u => speechSynthesis.speak(u)), 80);
+  // If speech never starts (no audio output, blocked), don't leave the robot stuck deaf.
+  guard = setTimeout(() => { speechSynthesis.cancel(); finish(); }, 3000);
 }
 
 function beep() {
@@ -633,10 +651,12 @@ $("lang").onchange = e => {
   cfg.lang = e.target.value; cfg.voice = ""; save(); loadVoices(); renderChips(); renderHeader();
   if (listening) spawn();
 };
+$("speakReplies").checked = cfg.speakReplies;
+$("speakReplies").onchange = e => { cfg.speakReplies = e.target.checked; save(); if (!cfg.speakReplies) speechSynthesis.cancel(); };
 $("voice").onchange = e => { cfg.voice = e.target.value; save(); };
 $("rate").oninput = e => { cfg.rate = e.target.value; save(); };
 $("pitch").oninput = e => { cfg.pitch = e.target.value; save(); };
-$("testVoice").onclick = () => speak(tr().hello(wakeName()));
+$("testVoice").onclick = () => { const was = cfg.speakReplies; cfg.speakReplies = true; speak(tr().hello(wakeName())); cfg.speakReplies = was; };
 
 if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 renderChips(); renderAbilities(); renderHeader();
