@@ -154,6 +154,7 @@
   </details>
 </main>
 
+<script src="config.js"></script>
 <script>
 // ============================================================
 //  Brain: free, keyless. Rules + Open-Meteo, Wikipedia, DuckDuckGo, RSS.
@@ -413,7 +414,7 @@ const INTENTS = [
 ];
 
 // ---- Conversation state + the main entry point ----
-const brain = { pending: null, awaiting: null, abilities: [], fallback: null };
+const brain = { pending: null, awaiting: null, abilities: [], fallback: null, user: null }; // user: signed-in name
 // Follow-up handlers for when the robot asked a question: id -> (text, lang, state) => answer | null
 const AWAIT = { weather: (t, lang) => weatherFor(cityOf(t, lang) || t, lang) };
 
@@ -457,9 +458,10 @@ async function answer(raw, lang, wakeId) {
 
   if (custom) return { text: custom.kind === "cannot" ? tr.no(custom.reply) : custom.reply, tone: custom.kind === "cannot" ? "no" : "yes" };
   if (intent) return intent.run(t, lang, brain);
-  if (lang === "en" && /\b(hello|hi|hey)\b/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
-  if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
-  if (lang === "es" && /\b(hola|buenas)\b/.test(t)) return { text: tr.hello(WAKE[wakeId].name), tone: "yes" };
+  const hello = () => ({ text: (brain.user && tr.greetUser ? tr.greetUser(brain.user) + " " : "") + tr.hello(WAKE[wakeId].name), tone: "yes" });
+  if (lang === "en" && /\b(hello|hi|hey)\b/.test(t)) return hello();
+  if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return hello();
+  if (lang === "es" && /\b(hola|buenas)\b/.test(t)) return hello();
   const chat = brain.fallback && (await brain.fallback(raw, lang));
   if (chat) return chat;
   return { text: tr.unknown, tone: "no" };
@@ -477,7 +479,7 @@ const app = $("app"), logEl = $("log"), statusEl = $("status");
 const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, abilities: [] };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
-const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } };
+const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } window.cloudSave && window.cloudSave(); };
 const syncAbilities = () => { brain.abilities = cfg.abilities.map(a => ({ ...a, keys: a.keys.split(",").map(k => k.trim().toLowerCase()).filter(Boolean) })); };
 syncAbilities();
 
@@ -592,7 +594,7 @@ function laugh(n = 5) {
 }
 
 // ---- Timer ----
-startTimer = (seconds, text) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); beep(); speak(m); }, seconds * 1000);
+startTimer = (seconds, text, onFire) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); beep(); speak(m); onFire && onFire(); }, seconds * 1000);
 
 // ---- Listening: wake mode (needs the wake word) vs command mode (next phrase is the command) ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -683,6 +685,7 @@ $("toggle").onclick = () => { if (listening) { userStopped = true; stopListening
 // Always listening: start on load; if the browser wants a gesture first, the first click starts it.
 function autoStart(e) {
   if (e && e.target && e.target.closest && e.target.closest("#toggle")) return;
+  if (window.authLocked && window.authLocked()) return; // sign in first
   if (cfg.autoListen && !listening && !userStopped && SR) startListening(!e);
 }
 window.addEventListener("load", () => autoStart());
@@ -746,5 +749,6 @@ if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged
 renderChips(); renderAbilities(); renderHeader();
 if (!SR) statusEl.textContent = "This browser has no speech recognition (use Chrome or Edge). You can still type.";
 </script>
+<script src="auth.js"></script>
 </body>
 </html>

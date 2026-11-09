@@ -109,6 +109,11 @@ Object.assign(X.es, {
   moonNext: (kind, n, date) => `La próxima ${kind} es ${n === 0 ? "hoy" : n === 1 ? "mañana" : `en ${n} días`}, el ${date}.`,
   today: "Hoy", tomorrow: "Mañana",
 });
+Object.assign(X.en, { welcome: n => `Welcome${n ? ", " + n : ""}!`, youAre: n => `You're ${n}.`, noName: "I don't know your name yet. Sign in and I will." });
+Object.assign(X.hi, { welcome: n => `स्वागत है${n ? ", " + n : ""}!`, youAre: n => `आप ${n} हैं।`, noName: "मुझे अभी आपका नाम नहीं पता। साइन इन कीजिए।" });
+Object.assign(X.es, { welcome: n => `¡Bienvenido${n ? ", " + n : ""}!`, youAre: n => `Eres ${n}.`, noName: "Aún no sé tu nombre. Inicia sesión y lo sabré." });
+X.en.labels.whoami = "tell you who you are"; X.hi.labels.whoami = "आपका नाम बता"; X.es.labels.whoami = "decirte tu nombre";
+for (const l of ["en", "hi", "es"]) T[l].greetUser = n => X[l].welcome(n);
 X.en.labels.moon = "tell you the moon phase";
 X.hi.labels.moon = "चाँद की स्थिति बता";
 X.es.labels.moon = "decirte la fase de la luna";
@@ -135,7 +140,7 @@ const dur = (sec, lang) => {
   return p.join(" ");
 };
 const store = (key, def) => { try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; } };
-const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* storage blocked */ } };
+const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* storage blocked */ } window.cloudSave && window.cloudSave(); };
 const geo = async (city, lang) => {
   const g = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=${lang}`);
   return g.results && g.results[0];
@@ -220,6 +225,23 @@ const countdown = {
 
 // ---------- Reminders ----------
 const TIME_RE = /(\d+)\s*(second|sec|minute|min|hour|सेकंड|सेकण्ड|मिनट|घंटे|घंटा|segundo|minuto|hora)\w*/;
+// Reminders are saved, so they survive a reload (and follow a signed-in user). They only ring while a tab is open.
+const armed = new Set();
+function armReminder(r) {
+  if (armed.has(r.id)) return;
+  armed.add(r.id);
+  startTimer(Math.max(0, (r.at - Date.now()) / 1000), r.text, () => {
+    keep("voicebot-reminders", store("voicebot-reminders", []).filter(x => x.id !== r.id));
+  });
+}
+window.rearmReminders = () => {
+  const now = Date.now(), all = store("voicebot-reminders", []), keepers = [];
+  for (const r of all) {
+    if (r.at > now) { keepers.push(r); armReminder(r); }
+    else addMsg("Missed while you were away: " + r.text, "bot no"); // it came due while no tab was open
+  }
+  if (keepers.length !== all.length) keep("voicebot-reminders", keepers);
+};
 const remind = {
   id: "remind",
   test: { en: /\bremind me\b/, hi: /याद दिला/, es: /recuérdame|recuerdame|recordarme/ },
@@ -231,7 +253,9 @@ const remind = {
     for (let i = 0; i < 2; i++) {
       msg = msg.replace(/^(to|about|that|que|de|in|after|en|dentro de)\s+/, "").replace(/\s+(in|after|en|dentro de|में|बाद)$/, "").trim();
     }
-    startTimer(n * mult, X[lang].remDone(msg));
+    const r = { id: Date.now() + "-" + Math.random().toString(36).slice(2, 7), at: Date.now() + n * mult * 1000, text: X[lang].remDone(msg) };
+    const all = store("voicebot-reminders", []); all.push(r); keep("voicebot-reminders", all);
+    armReminder(r);
     return { text: X[lang].remSet(msg, n, T[lang].units[k]), tone: "yes" };
   },
 };
@@ -618,6 +642,13 @@ const moon = {
   },
 };
 
+// ---------- Who am I (the signed-in name) ----------
+const whoami = {
+  id: "whoami",
+  test: { en: /\b(who am i|what'?s my name|what is my name|do you know my name)\b/, hi: /मेरा नाम क्या|मैं कौन हूँ|मेरा नाम बताओ/, es: /cómo me llamo|como me llamo|quién soy|quien soy/ },
+  run: (t, lang) => (brain.user ? { text: X[lang].youAre(brain.user), tone: "yes" } : { text: X[lang].noName, tone: "no" }),
+};
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -629,7 +660,7 @@ const help = {
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once
@@ -643,7 +674,7 @@ brain.fallback = async (raw, lang) => {
   if (!(await chatEnabled())) return null;
   try {
     const r = await fetch("/api/chat", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json", ...(window.authToken && window.authToken() ? { Authorization: "Bearer " + window.authToken() } : {}) },
       body: JSON.stringify({ lang, messages: [...brain.history.slice(-8), { role: "user", text: raw }] }),
     });
     if (!r.ok) return null;

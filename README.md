@@ -40,6 +40,24 @@ The key stays on the server in `api/chat.js`. Without it the robot works as befo
 
 To run locally: `npx vercel dev` (put `GEMINI_API_KEY` in a `.env.local` file).
 
+## Logins (optional, free with Supabase)
+Sign in with **email and password**, an **emailed login link**, **Google** or **GitHub**. A signed-in user gets their **notes, to-do list, reminders and settings saved to their account** (so they follow them across devices), and the robot greets them by name ("Welcome, Priya!", "who am I?"). By default the robot is **locked until you sign in**.
+
+Until you do the setup below, `config.js` is empty and the robot is open to everyone with no login, as before.
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. **SQL Editor:** paste and run [`supabase/schema.sql`](supabase/schema.sql). It creates one row per user, locked down so people only see their own data.
+3. **Project Settings > API:** copy the **Project URL** and the **anon public** key into [`config.js`](config.js). The anon key is meant to be public. Set `REQUIRE_LOGIN` to `false` if you want login to be optional.
+4. **Authentication > URL Configuration:** set **Site URL** to your Vercel URL, and add it plus `http://localhost:5173` under **Redirect URLs**.
+5. **Authentication > Providers:** email is on by default (turn off "Confirm email" if you don't want confirmation emails). To use Google or GitHub, enable them and paste in the client ID and secret from a Google Cloud OAuth client or a GitHub OAuth app. Their callback URL is `https://<your-project>.supabase.co/auth/v1/callback`, which Supabase shows you.
+6. **Vercel environment variables:** add `SUPABASE_URL` and `SUPABASE_ANON_KEY` (the same two values). With them set, the chat endpoint only answers signed-in users, so strangers can't use up your free Gemini quota.
+
+Notes on how it behaves:
+- The login screen is English only, and the lock on the page is a convenience, not security: the free public services (weather, news, quotes) are still reachable by anyone who calls them directly. Only your data (protected by the database rules) and chat (checked on the server) are truly protected.
+- Signing out clears that person's notes, to-dos and reminders from the browser. They stay in their account.
+- Reminders ring only while a tab is open. One that came due while no tab was open is shown as "Missed while you were away" the next time it loads.
+- Free Supabase projects pause after a week without activity, so the first login afterwards can be slow or fail until you resume the project.
+
 ## Notes
 - Web answers are short abstracts, not full search results.
 - Opening a website from voice can be blocked by the browser's popup blocker; the reply then shows an "Open" link to tap.

@@ -2,11 +2,25 @@
 // Set GEMINI_API_KEY in Vercel (Project Settings > Environment Variables). Optional: GEMINI_MODEL.
 const LANGS = { en: "English", hi: "Hindi", es: "Spanish" };
 
+// If Supabase sign-in is configured (SUPABASE_URL and SUPABASE_ANON_KEY set in Vercel), only signed-in users may chat,
+// so strangers can't spend your free Gemini quota. Without those variables chat stays open.
+async function authorised(req) {
+  const url = process.env.SUPABASE_URL, anon = process.env.SUPABASE_ANON_KEY;
+  if (!url || !anon) return true;
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token) return false;
+  try {
+    const r = await fetch(`${url.replace(/\/$/, "")}/auth/v1/user`, { headers: { apikey: anon, Authorization: `Bearer ${token}` } });
+    return r.ok;
+  } catch (e) { return false; }
+}
+
 module.exports = async (req, res) => {
   const key = process.env.GEMINI_API_KEY;
   // GET tells the page whether chat is configured, so it can skip it quietly when it isn't.
   if (req.method === "GET") return res.status(200).json({ enabled: Boolean(key) });
   if (!key) return res.status(503).json({ error: "chat not configured" });
+  if (!(await authorised(req))) return res.status(401).json({ error: "sign in to chat" });
 
   const body = req.body || {};
   const lang = LANGS[body.lang] || "English";
