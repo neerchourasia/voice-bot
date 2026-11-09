@@ -91,6 +91,29 @@ const X = {
     chips: ["¿Qué puedes hacer?", "Convierte 10 millas a kilómetros", "Dime un dato curioso", "Inicia el cronómetro", "Abre YouTube", "¿Cuántos días faltan para Navidad?", "¿Qué hora es en Tokio?"],
   },
 };
+Object.assign(X.en, {
+  moonNames: ["new moon", "waxing crescent", "first quarter", "waxing gibbous", "full moon", "waning gibbous", "last quarter", "waning crescent"],
+  moonOut: (name, pct, when) => `${when} the moon is a ${name}, about ${pct} percent lit.`,
+  moonNext: (kind, n, date) => `The next ${kind} is ${n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`}, on ${date}.`,
+  today: "Today", tomorrow: "Tomorrow",
+});
+Object.assign(X.hi, {
+  moonNames: ["अमावस्या", "बढ़ता हुआ अर्धचंद्र", "पहली तिमाही का चाँद", "बढ़ता हुआ गिब्बस चाँद", "पूर्णिमा", "घटता हुआ गिब्बस चाँद", "आखिरी तिमाही का चाँद", "घटता हुआ अर्धचंद्र"],
+  moonOut: (name, pct, when) => `${when} चाँद की स्थिति है ${name}, लगभग ${pct} प्रतिशत रोशन।`,
+  moonNext: (kind, n, date) => `अगली ${kind} ${n === 0 ? "आज" : n === 1 ? "कल" : `${n} दिन बाद`}, ${date} को है।`,
+  today: "आज", tomorrow: "कल",
+});
+Object.assign(X.es, {
+  moonNames: ["luna nueva", "luna creciente", "cuarto creciente", "luna gibosa creciente", "luna llena", "luna gibosa menguante", "cuarto menguante", "luna menguante"],
+  moonOut: (name, pct, when) => `${when} la luna está en ${name}, iluminada al ${pct} por ciento.`,
+  moonNext: (kind, n, date) => `La próxima ${kind} es ${n === 0 ? "hoy" : n === 1 ? "mañana" : `en ${n} días`}, el ${date}.`,
+  today: "Hoy", tomorrow: "Mañana",
+});
+X.en.labels.moon = "tell you the moon phase";
+X.hi.labels.moon = "चाँद की स्थिति बता";
+X.es.labels.moon = "decirte la fase de la luna";
+X.en.chips.push("What's the moon phase?"); X.hi.chips.push("चाँद की क्या स्थिति है?"); X.es.chips.push("¿Qué fase de la luna es hoy?");
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -573,6 +596,28 @@ const copy = {
   },
 };
 
+// ---------- Moon phase (computed locally from the average lunar cycle, good to about a day) ----------
+const SYNODIC = 29.530588853, NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14); // a known new moon
+const moonAge = ms => ((((ms - NEW_MOON_REF) / 864e5) % SYNODIC) + SYNODIC) % SYNODIC;
+const moonPhaseIndex = age => Math.floor(((age + SYNODIC / 16) % SYNODIC) / (SYNODIC / 8)); // 0 new … 4 full … 7 waning crescent
+const moon = {
+  id: "moon",
+  test: { en: /\b(moon|lunar)\b/, hi: /चाँद|चांद|चंद्रमा|पूर्णिमा|अमावस्या/, es: /\bluna\b|lunar/ },
+  run(t, lang) {
+    const x = X[lang], now = new Date(), noon = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    const wantFull = /full moon|पूर्णिमा|luna llena/.test(t), wantNew = /new moon|अमावस्या|luna nueva/.test(t);
+    if (wantFull || wantNew) {
+      const goal = wantFull ? SYNODIC / 2 : 0;
+      let days = ((goal - moonAge(noon)) % SYNODIC + SYNODIC) % SYNODIC;
+      const n = Math.round(days), date = new Date(noon + n * 864e5).toLocaleDateString(SPEECH[lang], { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+      return { text: x.moonNext(x.moonNames[wantFull ? 4 : 0], n, date), tone: "yes" };
+    }
+    const tomorrow = /tomorrow|mañana/.test(t), at = noon + (tomorrow ? 864e5 : 0), age = moonAge(at);
+    const pct = Math.round(((1 - Math.cos((2 * Math.PI * age) / SYNODIC)) / 2) * 100);
+    return { text: x.moonOut(x.moonNames[moonPhaseIndex(age)], pct, tomorrow ? x.tomorrow : x.today), tone: "yes" };
+  },
+};
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -584,7 +629,7 @@ const help = {
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once
