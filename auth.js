@@ -60,7 +60,7 @@
     SYNCED_SETTINGS.forEach(k => { if (s[k] !== undefined) cfg[k] = s[k]; });
     save();
     $("wake").value = cfg.wake; $("lang").value = cfg.lang; $("rate").value = cfg.rate; $("pitch").value = cfg.pitch;
-    $("speakReplies").checked = cfg.speakReplies; $("autoListen").checked = cfg.autoListen;
+    $("autoListen").checked = cfg.autoListen; renderMute();
     syncAbilities(); renderAbilities(); loadVoices(); renderChips(); renderHeader();
     if (cfg.lang !== lang && listening) spawn();
   }

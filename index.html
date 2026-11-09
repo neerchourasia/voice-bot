@@ -99,6 +99,7 @@
     <div class="row">
       <button class="primary" id="toggle">Start listening</button>
       <button class="ghost" id="laughBtn" title="Make it laugh">😂 Laugh</button>
+      <button class="ghost" id="muteBtn" aria-pressed="false"></button>
     </div>
   </div>
 
@@ -550,6 +551,7 @@ function speak(what, onDone) {
 }
 
 function beep() {
+  if (!cfg.speakReplies) return; // muted
   try {
     const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
     o.connect(g); g.connect(c.destination); o.frequency.value = 880;
@@ -739,7 +741,21 @@ $("lang").onchange = e => {
 $("autoListen").checked = cfg.autoListen;
 $("autoListen").onchange = e => { cfg.autoListen = e.target.checked; save(); if (cfg.autoListen) autoStart(); };
 $("speakReplies").checked = cfg.speakReplies;
-$("speakReplies").onchange = e => { cfg.speakReplies = e.target.checked; save(); if (!cfg.speakReplies) speechSynthesis.cancel(); };
+// Mute button: silences the robot's voice, laugh and beeps at once (it still listens and answers on screen).
+function renderMute() {
+  const m = !cfg.speakReplies;
+  $("muteBtn").textContent = m ? "🔇 Muted" : "🔊 Sound on";
+  $("muteBtn").title = m ? "Turn the robot's sound back on" : "Mute the robot";
+  $("muteBtn").setAttribute("aria-pressed", String(m));
+  $("speakReplies").checked = cfg.speakReplies;
+}
+function setSpeak(on) {
+  cfg.speakReplies = on; save(); renderMute();
+  if (!on && "speechSynthesis" in window) speechSynthesis.cancel(); // stop mid-sentence
+}
+$("muteBtn").onclick = () => setSpeak(!cfg.speakReplies);
+$("speakReplies").onchange = e => setSpeak(e.target.checked);
+renderMute();
 $("voice").onchange = e => { cfg.voice = e.target.value; save(); };
 $("rate").oninput = e => { cfg.rate = e.target.value; save(); };
 $("pitch").oninput = e => { cfg.pitch = e.target.value; save(); };
