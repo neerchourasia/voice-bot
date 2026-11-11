@@ -3,11 +3,11 @@
 (function () {
   const A = window.APP_CONFIG || {};
   const configured = Boolean(A.SUPABASE_URL && A.SUPABASE_ANON_KEY);
-  const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
+  const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js";
   const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "speakReplies", "autoListen", "abilities"]; // not "voice": voices differ per device
   const LOCAL = { notes: "voicebot-notes", todo: "voicebot-todo", reminders: "voicebot-reminders" };
 
-  let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in";
+  let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in", providers = true; // providers: any Google/GitHub button available
   const required = () => configured && A.REQUIRE_LOGIN !== false;
 
   // Other scripts ask these questions.
@@ -121,18 +121,25 @@
     $a("authPass").placeholder = rec ? "New password" : "Password";
     $a("authPass").autocomplete = up || rec ? "new-password" : "current-password";
     for (const id of ["authToggle", "authForgot", "authMagic", "authOr", "authOauth"]) $a(id).hidden = rec;
+    if (!providers) { $a("authOr").hidden = true; $a("authOauth").hidden = true; } // nothing to offer
     $a("authSkip").hidden = required() || rec;
     say("");
   }
 
   function showOverlay(on) { ov.hidden = !on; if (on) setTimeout(() => $a(mode === "recover" ? "authPass" : "authEmail").focus(), 0); }
 
+  // A Log out button next to the main controls, shown only while signed in.
+  const logoutBtn = document.createElement("button");
+  logoutBtn.className = "ghost"; logoutBtn.id = "logoutBtn"; logoutBtn.textContent = "↩ Log out"; logoutBtn.title = "Sign out of your account";
+  logoutBtn.hidden = true; logoutBtn.onclick = () => signOut();
+
   function renderBar() {
+    logoutBtn.hidden = !user;
     if (!configured) { bar.hidden = true; return; }
     bar.hidden = false; bar.textContent = "";
     if (user) {
       const who = document.createElement("span"); who.innerHTML = "Signed in as <b></b>"; who.querySelector("b").textContent = displayName();
-      const out = document.createElement("button"); out.textContent = "Sign out"; out.onclick = signOut;
+      const out = document.createElement("button"); out.textContent = "Log out"; out.onclick = signOut;
       bar.append(who, out);
     } else {
       const inb = document.createElement("button"); inb.textContent = "Sign in"; inb.onclick = () => { setMode("in"); showOverlay(true); };
@@ -231,6 +238,7 @@
     if (!configured) return;
     document.body.append(ov);
     document.querySelector("main").prepend(bar);
+    document.getElementById("muteBtn").after(logoutBtn);
     if (required()) showOverlay(true); // locked until we know there's a session
     $a("authForm").onsubmit = submit;
     $a("authToggle").onclick = () => setMode(mode === "up" ? "in" : "up");
@@ -246,6 +254,15 @@
       say("Couldn't load the sign-in library. Check your connection and reload.", "err");
       return;
     }
+    // Only offer the sign-in providers this project has switched on (Supabase lists them publicly).
+    try {
+      const s = await fetch(A.SUPABASE_URL.replace(/\/$/, "") + "/auth/v1/settings", { headers: { apikey: A.SUPABASE_ANON_KEY } }).then(r => r.json());
+      const ext = s.external || {};
+      let n = 0;
+      ov.querySelectorAll("[data-p]").forEach(b => { const on = Boolean(ext[b.dataset.p]); b.hidden = !on; if (on) n++; });
+      providers = n > 0;
+      setMode(mode);
+    } catch { /* keep every button if the settings can't be read */ }
     // Don't await Supabase calls inside this callback (it can deadlock the client), so defer.
     sb.auth.onAuthStateChange((event, s) => setTimeout(() => onSession(s, event), 0));
     const { data } = await sb.auth.getSession();
