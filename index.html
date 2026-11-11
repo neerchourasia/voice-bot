@@ -601,7 +601,7 @@ function laugh(n = 5) {
 }
 
 // ---- Timer ----
-startTimer = (seconds, text, onFire) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); beep(); speak(m); onFire && onFire(); }, seconds * 1000);
+startTimer = (seconds, text, onFire, quiet) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); if (!quiet) beep(); speak(m); onFire && onFire(); }, seconds * 1000);
 
 // ---- Listening: wake mode (needs the wake word) vs command mode (next phrase is the command) ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

@@ -144,6 +144,43 @@ Object.assign(X.en.labels, { stop: "stop talking when you say stop", again: "rep
 Object.assign(X.hi.labels, { stop: "रुको कहने पर चुप", again: "पिछला जवाब दोहरा", followup: "“और कल?” जैसे सवालों का जवाब दे", speed: "धीरे या तेज़ बोल", lang: "अंग्रेज़ी, हिन्दी और स्पेनिश में बदल" });
 Object.assign(X.es.labels, { stop: "callarme cuando digas para", again: "repetir mi última respuesta", followup: "responder preguntas como «¿y mañana?»", speed: "hablar más lento, rápido, fuerte o bajo", lang: "cambiar entre inglés, hindi y español" });
 
+Object.assign(X.en, {
+  goodMorning: n => `Good morning${n ? ", " + n : ""}!`, briefNoTodo: "Nothing on your to-do list.", briefNews: s => `In the news: ${s}.`,
+  briefReminders: n => `You have ${n} ${plural(n, "reminder", "reminders")} coming up.`,
+  askHome: "Which city should I use for your weather? I'll remember it.", homeSaved: c => `Okay, I'll use ${c} as your home city.`,
+  pomoStart: (w, b, r) => `Focus timer started: ${r} rounds of ${w} minutes, with ${b}-minute breaks. Ready, set, focus!`,
+  pomoBreak: b => `Great work! Take a ${b}-minute break.`, pomoBack: (n, r) => `Break's over. Round ${n} of ${r}. Focus!`, pomoDone: "All rounds finished. Well done!",
+  pomoStopped: "Focus timer stopped.", pomoNone: "No focus timer is running.", pomoLeft: (what, d) => `${what}. About ${d} left.`, pomoWork: n => `Round ${n}: focus time`, pomoRest: "Break time",
+  ambStart: (k, m) => `Playing ${k}${m ? ` for ${m} minutes` : ""}. Say “stop the sound” when you want it off.`, ambStop: "Sound off.", ambNone: "Nothing is playing.", ambMuted: "I'm muted. Tap the sound button first.",
+  ambNames: { rain: "rain", ocean: "ocean waves", white: "white noise", brown: "brown noise", pink: "pink noise", fan: "a fan" },
+  breathStart: "Okay, let's breathe together, three rounds. Breathe in.", breathHold: "Hold.", breathOut: "Breathe out slowly.", breathIn: "Breathe in.", breathDone: "Well done. You can open your eyes.", breathStopped: "Okay, stopping the breathing exercise.", breathNone: "No breathing exercise is running.",
+});
+Object.assign(X.hi, {
+  goodMorning: n => `सुप्रभात${n ? ", " + n : ""}!`, briefNoTodo: "आपकी टू-डू लिस्ट में कुछ नहीं है।", briefNews: s => `खबरों में: ${s}।`,
+  briefReminders: n => `आपके ${n} रिमाइंडर आने वाले हैं।`,
+  askHome: "आपके मौसम के लिए कौन सा शहर इस्तेमाल करूँ? मैं याद रखूँगा।", homeSaved: c => `ठीक है, ${c} आपका घर का शहर रहेगा।`,
+  pomoStart: (w, b, r) => `फ़ोकस टाइमर शुरू: ${w} मिनट के ${r} राउंड, ${b} मिनट के ब्रेक के साथ। तैयार, ध्यान लगाइए!`,
+  pomoBreak: b => `बहुत बढ़िया! ${b} मिनट का ब्रेक लीजिए।`, pomoBack: (n, r) => `ब्रेक खत्म। राउंड ${n}, कुल ${r}। ध्यान लगाइए!`, pomoDone: "सारे राउंड पूरे हुए। शाबाश!",
+  pomoStopped: "फ़ोकस टाइमर बंद कर दिया।", pomoNone: "कोई फ़ोकस टाइमर नहीं चल रहा।", pomoLeft: (what, d) => `${what}। लगभग ${d} बाकी हैं।`, pomoWork: n => `राउंड ${n}: ध्यान का समय`, pomoRest: "ब्रेक का समय",
+  ambStart: (k, m) => `${k} चला रहा हूँ${m ? `, ${m} मिनट के लिए` : ""}। बंद करने के लिए “आवाज़ बंद करो” कहिए।`, ambStop: "आवाज़ बंद।", ambNone: "कुछ नहीं बज रहा।", ambMuted: "मैं म्यूट हूँ। पहले साउंड बटन दबाइए।",
+  ambNames: { rain: "बारिश की आवाज़", ocean: "समुद्र की लहरें", white: "व्हाइट नॉइज़", brown: "ब्राउन नॉइज़", pink: "पिंक नॉइज़", fan: "पंखे की आवाज़" },
+  breathStart: "ठीक है, साथ में साँस लेते हैं, तीन राउंड। साँस अंदर लीजिए।", breathHold: "रोकिए।", breathOut: "धीरे-धीरे साँस छोड़िए।", breathIn: "साँस अंदर लीजिए।", breathDone: "बहुत अच्छा। अब आँखें खोल सकते हैं।", breathStopped: "ठीक है, साँस का अभ्यास रोक दिया।", breathNone: "कोई साँस का अभ्यास नहीं चल रहा।",
+});
+Object.assign(X.es, {
+  goodMorning: n => `¡Buenos días${n ? ", " + n : ""}!`, briefNoTodo: "No hay nada en tu lista de tareas.", briefNews: s => `En las noticias: ${s}.`,
+  briefReminders: n => `Tienes ${n} ${plural(n, "recordatorio", "recordatorios")} próximos.`,
+  askHome: "¿Qué ciudad uso para tu clima? La recordaré.", homeSaved: c => `Vale, usaré ${c} como tu ciudad.`,
+  pomoStart: (w, b, r) => `Temporizador de enfoque: ${r} rondas de ${w} minutos, con descansos de ${b}. ¡A concentrarse!`,
+  pomoBreak: b => `¡Buen trabajo! Descansa ${b} minutos.`, pomoBack: (n, r) => `Se acabó el descanso. Ronda ${n} de ${r}. ¡A concentrarse!`, pomoDone: "Todas las rondas terminadas. ¡Muy bien!",
+  pomoStopped: "Temporizador de enfoque detenido.", pomoNone: "No hay ningún temporizador de enfoque.", pomoLeft: (what, d) => `${what}. Faltan unos ${d}.`, pomoWork: n => `Ronda ${n}: tiempo de enfoque`, pomoRest: "Tiempo de descanso",
+  ambStart: (k, m) => `Reproduciendo ${k}${m ? ` durante ${m} minutos` : ""}. Di «apaga el sonido» cuando quieras.`, ambStop: "Sonido apagado.", ambNone: "No suena nada.", ambMuted: "Estoy en silencio. Toca primero el botón de sonido.",
+  ambNames: { rain: "lluvia", ocean: "olas del mar", white: "ruido blanco", brown: "ruido marrón", pink: "ruido rosa", fan: "un ventilador" },
+  breathStart: "Vale, respiremos juntos, tres rondas. Inhala.", breathHold: "Sostén.", breathOut: "Exhala despacio.", breathIn: "Inhala.", breathDone: "Muy bien. Ya puedes abrir los ojos.", breathStopped: "Vale, detengo el ejercicio de respiración.", breathNone: "No hay ningún ejercicio de respiración.",
+});
+Object.assign(X.en.labels, { briefing: "give you a morning briefing", homecity: "remember your home city", pomodoro: "run a focus timer", ambient: "play rain, ocean or white noise", breathing: "guide a breathing exercise" });
+Object.assign(X.hi.labels, { briefing: "सुबह का ब्रीफ़िंग दे", homecity: "आपका घर का शहर याद रख", pomodoro: "फ़ोकस टाइमर चला", ambient: "बारिश या समुद्र की आवाज़ चला", breathing: "साँस का अभ्यास करा" });
+Object.assign(X.es.labels, { briefing: "darte un resumen de la mañana", homecity: "recordar tu ciudad", pomodoro: "usar un temporizador de enfoque", ambient: "poner sonido de lluvia, mar o ruido blanco", breathing: "guiar un ejercicio de respiración" });
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -151,9 +188,9 @@ for (const l of ["en", "hi", "es"]) {
 }
 
 // Stop words so the city survives in "what time is it in Tokyo" / "sunrise in Pune".
-STOP_CITY.en.push(..."time clock current sunrise sunset when does rise set up go down".split(" "));
-STOP_CITY.hi.push(..."समय टाइम कितने बजे हैं सूर्योदय सूर्यास्त कब होता होगा हुआ".split(" "));
-STOP_CITY.es.push(..."hora es son las amanecer atardecer puesta sol cuándo cuando sale se pone salida".split(" "));
+STOP_CITY.en.push(..."time clock current sunrise sunset when does rise set up go down will be going to there do expect cold hot warm sunny snow snowing raining windy umbrella outside need i an a my you should bring take wear are".split(" "));
+STOP_CITY.hi.push(..."समय टाइम कितने बजे हैं सूर्योदय सूर्यास्त कब होता होगा होगी हुआ आज".split(" "));
+STOP_CITY.es.push(..."hora es son las amanecer atardecer puesta sol cuándo cuando sale se pone salida va llover lloverá nevar frío calor".split(" "));
 
 // ---------- Helpers ----------
 const unesc = s => { const e = document.createElement("textarea"); e.innerHTML = s; return e.value; };
@@ -781,6 +818,187 @@ const switchLang = {
   },
 };
 
+// ---------- Daily helper: briefing, focus timer, ambient sounds, breathing ----------
+const memory = () => store("voicebot-memory", {});
+const saveMemory = m => keep("voicebot-memory", m);
+
+async function briefingFor(lang, prefix) {
+  const x = X[lang], m = memory(), parts = [];
+  if (prefix) parts.push(prefix);
+  parts.push(x.goodMorning(brain.user));
+  parts.push(T[lang].date(new Date().toLocaleDateString(SPEECH[lang], { weekday: "long", month: "long", day: "numeric" })));
+  try { const w = await weatherFor(m.city, lang); if (w.tone === "yes") parts.push(w.text); } catch { /* skip the weather */ }
+  const todos = store("voicebot-todo", []);
+  parts.push(todos.length ? x.todoList(todos.length, todos.slice(0, 5).join(", ")) : x.briefNoTodo);
+  const soon = store("voicebot-reminders", []).filter(r => r.at > Date.now() && r.at < Date.now() + 864e5).length;
+  if (soon) parts.push(x.briefReminders(soon));
+  try {
+    const j = await getJSON(`/api/news?lang=${lang}`);
+    if (j.items && j.items.length) parts.push(x.briefNews(j.items.slice(0, 2).join(". ")));
+  } catch { /* skip the news */ }
+  return { text: parts.join(" "), tone: "yes" };
+}
+const briefing = {
+  id: "briefing",
+  test: {
+    en: /^(?:hey |hi |ok |okay )?(?:good morning|morning)\b|\b(?:daily|morning) (?:briefing|brief|update)\b|\bbrief me\b|\bstart my day\b|\bwhat'?s my day\b/,
+    hi: /^(?:सुप्रभात|गुड मॉर्निंग)|मेरा दिन|आज का ब्रीफ|सुबह का ब्रीफ/, es: /^(?:buenos días|buenos dias)|resumen del día|resumen del dia|dame el resumen|mi día de hoy/,
+  },
+  async run(t, lang, ctx) {
+    if (!memory().city) { ctx.awaiting = { id: "homecity", then: "briefing" }; return { text: X[lang].askHome, tone: "yes" }; }
+    return briefingFor(lang);
+  },
+};
+const homecity = {
+  id: "homecity",
+  test: { en: /\b(?:change|set|update|save)\s+my\s+(?:home\s+)?city\b|\bmy home city\b/, hi: /मेरा (?:घर का )?शहर (?:बदलो|सेट)|घर का शहर/, es: /cambia mi ciudad|mi ciudad de casa|guarda mi ciudad/ },
+  async run(t, lang, ctx) {
+    const named = (t.match(/\b(?:to|a|en|को)\s+([\p{L}\p{M} .'-]+)$/u) || [])[1];
+    if (!named) { ctx.awaiting = { id: "homecity" }; return { text: X[lang].askHome, tone: "yes" }; }
+    return saveHome(named, lang);
+  },
+};
+async function saveHome(city, lang) {
+  const p = await geo(city, lang);
+  if (!p) return { text: T[lang].cityNotFound(city), tone: "no" };
+  const m = memory(); m.city = p.name; saveMemory(m);
+  return { text: X[lang].homeSaved(p.name), tone: "yes" };
+}
+AWAIT.homecity = async (t, lang, st) => {
+  const saved = await saveHome(cityOf(t, lang) || t, lang);
+  if (saved.tone !== "yes" || st.then !== "briefing") return saved;
+  return briefingFor(lang, saved.text);
+};
+
+// Focus timer ("pomodoro"): work rounds with breaks, announced aloud. Rings only while the page is open.
+const pomo = { ids: [], events: [] };
+function pomoStop() { pomo.ids.forEach(clearTimeout); pomo.ids = []; pomo.events = []; }
+function pomoAt(sec, text, phase, n) {
+  pomo.events.push({ at: Date.now() + sec * 1000, phase, n });
+  pomo.ids.push(startTimer(sec, text));
+}
+const pomodoro = {
+  id: "pomodoro",
+  test: { en: /\bpomodoro\b|\bfocus (?:timer|session|mode)\b|\bstart (?:a )?focus\b/, hi: /पोमोडोरो|फ़ोकस टाइमर|फोकस टाइमर/, es: /pomodoro|sesión de enfoque|sesion de enfoque|temporizador de enfoque/ },
+  run(t, lang) {
+    const x = X[lang];
+    if (/\b(?:stop|cancel|end|quit)\b|बंद|रोको|detén|deten|cancela|para\b/.test(t)) {
+      const was = pomo.ids.length > 0; pomoStop();
+      return { text: was ? x.pomoStopped : x.pomoNone, tone: was ? "yes" : "no" };
+    }
+    if (/\b(?:left|remaining|status|how long|where am i)\b|कितना|बाकी|cuánto|cuanto|queda|falta/.test(t) && pomo.events.length) {
+      const next = pomo.events.find(e => e.at > Date.now());
+      if (!next) return { text: x.pomoNone, tone: "no" };
+      const working = next.phase === "work-end";
+      return { text: x.pomoLeft(working ? x.pomoWork(next.n) : x.pomoRest, dur((next.at - Date.now()) / 1000, lang)), tone: "yes" };
+    }
+    const minutes = +((t.match(/(\d+)\s*(?:minute|min|मिनट|minuto)/) || [])[1] || 25);
+    const work = Math.min(120, Math.max(5, minutes)), rest = Math.max(3, Math.round(work / 5)), rounds = 4;
+    pomoStop();
+    let at = 0;
+    for (let r = 1; r <= rounds; r++) {
+      at += work * 60;
+      if (r === rounds) pomoAt(at, x.pomoDone, "done", r);
+      else { pomoAt(at, x.pomoBreak(rest), "work-end", r); at += rest * 60; pomoAt(at, x.pomoBack(r + 1, rounds), "rest-end", r + 1); }
+    }
+    return { text: x.pomoStart(work, rest, rounds), tone: "yes" };
+  },
+};
+
+// Ambient sounds, synthesised from noise with Web Audio (no downloads).
+let amb = null;
+function noiseBuffer(ctx, kind) {
+  const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  let last = 0, b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) {
+    const w = Math.random() * 2 - 1;
+    if (kind === "brown" || kind === "ocean" || kind === "fan") { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    else if (kind === "pink") { b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913; d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.2; }
+    else d[i] = w;
+  }
+  return buf;
+}
+function ambientStart(kind, minutes) {
+  ambientStop(true);
+  const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  ctx.resume();
+  const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx, kind); src.loop = true;
+  const out = ctx.createGain(); out.gain.value = 0;
+  let node = src;
+  const chain = (type, freq, q = 0.7) => { const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; node.connect(f); node = f; };
+  if (kind === "rain") { chain("highpass", 900); chain("lowpass", 7000); }
+  if (kind === "ocean") { chain("lowpass", 800); }
+  if (kind === "fan") { chain("lowpass", 500); }
+  node.connect(out); out.connect(ctx.destination);
+  const level = { rain: 0.16, ocean: 0.35, white: 0.1, brown: 0.3, pink: 0.18, fan: 0.3 }[kind];
+  out.gain.linearRampToValueAtTime(level, ctx.currentTime + 1.5);
+  let lfo = null;
+  if (kind === "ocean") { // slow swell, like waves coming in and out
+    lfo = ctx.createOscillator(); lfo.frequency.value = 0.11;
+    const depth = ctx.createGain(); depth.gain.value = level * 0.8; lfo.connect(depth); depth.connect(out.gain); lfo.start();
+  }
+  src.start();
+  amb = { ctx, out, src, lfo, timer: minutes ? setTimeout(() => ambientStop(), minutes * 60000) : null };
+}
+function ambientStop(instant) {
+  if (!amb) return false;
+  const a = amb; amb = null; clearTimeout(a.timer);
+  try {
+    a.out.gain.cancelScheduledValues(a.ctx.currentTime);
+    a.out.gain.setValueAtTime(a.out.gain.value, a.ctx.currentTime);
+    a.out.gain.linearRampToValueAtTime(0, a.ctx.currentTime + (instant ? 0.05 : 1));
+    setTimeout(() => { try { a.src.stop(); a.lfo && a.lfo.stop(); a.ctx.close(); } catch { /* already closed */ } }, instant ? 100 : 1200);
+  } catch { /* ignore */ }
+  return true;
+}
+const AMBIENT_WORDS = {
+  rain: /rain|बारिश|lluvia/, ocean: /ocean|waves|sea|समुद्र|लहर|olas|mar\b/, white: /white noise|व्हाइट|ruido blanco/, brown: /brown noise|ब्राउन|ruido marrón|ruido marron/,
+  pink: /pink noise|पिंक|ruido rosa/, fan: /\bfan\b|पंखे|ventilador/,
+};
+const ambient = {
+  id: "ambient",
+  test: {
+    en: /\b(?:play|start|put on|turn on)\s+(?:some\s+|the\s+)?(?:rain|ocean|waves|white noise|brown noise|pink noise|fan|ambient|nature)\b|\b(?:stop|turn off|switch off)\s+(?:the\s+)?(?:sound|noise|rain|ocean|waves)\b/,
+    hi: /(?:बारिश|समुद्र|लहरों?|व्हाइट नॉइज़|ब्राउन नॉइज़|पंखे)\s*(?:की आवाज़)?\s*(?:चलाओ|बजाओ)|आवाज़ बंद|आवाज बंद/,
+    es: /pon\s+(?:el\s+)?(?:sonido de\s+)?(?:la\s+)?(?:lluvia|olas|ruido blanco|ruido marrón|ruido rosa|ventilador)|apaga el sonido|para el sonido/,
+  },
+  run(t, lang) {
+    const x = X[lang];
+    if (/\b(?:stop|turn off|switch off)\b|बंद|apaga|para el/.test(t)) return ambientStop() ? { text: x.ambStop, tone: "yes" } : { text: x.ambNone, tone: "no" };
+    if (!cfg.speakReplies) return { text: x.ambMuted, tone: "no" };
+    const kind = Object.keys(AMBIENT_WORDS).find(k => AMBIENT_WORDS[k].test(t)) || "rain";
+    const mins = +((t.match(/(\d+)\s*(?:minute|min|मिनट|minuto)/) || [])[1] || 0) || 0;
+    try { ambientStart(kind, mins); } catch { return { text: x.ambNone, tone: "no" }; }
+    return { text: x.ambStart(x.ambNames[kind], mins), tone: "yes" };
+  },
+};
+
+// Guided breathing: 4-7-8, three rounds, spoken at the right moments.
+let breath = [];
+const breathing = {
+  id: "breathing",
+  test: {
+    en: /\b(?:breathing exercise|breathe with me|guide me to breathe|help me (?:relax|breathe|calm down)|calm me down|take a deep breath)\b|\bstop (?:the )?breathing\b/,
+    hi: /साँस का अभ्यास|सांस का अभ्यास|गहरी साँस|गहरी सांस|साथ में साँस|साथ में सांस/, es: /ejercicio de respiración|ejercicio de respiracion|respira conmigo|ayúdame a relajarme|ayudame a relajarme/,
+  },
+  run(t, lang) {
+    const x = X[lang];
+    if (/\b(?:stop|cancel|done|enough)\b|बंद|रोको|detén|deten/.test(t)) {
+      const was = breath.length > 0; breath.forEach(clearTimeout); breath = [];
+      return { text: was ? x.breathStopped : x.breathNone, tone: was ? "yes" : "no" };
+    }
+    breath.forEach(clearTimeout); breath = [];
+    for (let r = 0; r < 3; r++) { // round length 19s: in 4, hold 7, out 8; the first "in" is this reply
+      const start = 3 + r * 19;
+      if (r > 0) breath.push(startTimer(start, x.breathIn, null, true));
+      breath.push(startTimer(start + 4, x.breathHold, null, true));
+      breath.push(startTimer(start + 11, x.breathOut, null, true));
+    }
+    breath.push(startTimer(3 + 3 * 19, x.breathDone, () => { breath = []; }, true));
+    return { text: x.breathStart, tone: "yes" };
+  },
+};
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -788,11 +1006,14 @@ const help = {
   run: (t, lang) => ({ text: X[lang].help(Object.values(T[lang].labels).join(", ")), tone: "yes" }),
 };
 
+// More ways to ask about the weather ("do I need an umbrella in Tokyo", "is it sunny in Madrid").
+INTENTS.find(i => i.id === "weather").test.en = /\b(weather|forecast|temperature|rain|raining|umbrella|sunny|snowing|windy)/;
+
 // "google" now opens a Google search tab instead of asking DuckDuckGo.
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once
