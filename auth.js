@@ -7,6 +7,9 @@
   const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "volume", "speakReplies", "autoListen", "abilities", "fixes", "customWake", "shareUsage"]; // not "voice": voices differ per device
   const LOCAL = { notes: "voicebot-notes", todo: "voicebot-todo", reminders: "voicebot-reminders", memory: "voicebot-memory" };
 
+  const LAST_USER = "voicebot-lastuser"; // who signed in on this device, so the app still opens offline
+  let offlineMode = false;
+  let dirty = false;
   let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in", providers = true, memoryColumn = true, warnedMemory = false; // providers: any Google/GitHub button available
   const required = () => configured && A.REQUIRE_LOGIN !== false;
 
@@ -31,7 +34,9 @@
 
   // ---------- Cloud sync ----------
   async function push() {
-    if (!user || !sb) return;
+    if (!user || !sb || offlineMode) return;
+    if (navigator.onLine === false) { dirty = true; return; } // sync later, when the connection is back
+    dirty = false;
     const settings = {}; SYNCED_SETTINGS.forEach(k => (settings[k] = cfg[k]));
     const row = {
       user_id: user.id, notes: readLocal(LOCAL.notes), todo: readLocal(LOCAL.todo), reminders: readLocal(LOCAL.reminders),
@@ -48,6 +53,7 @@
   }
 
   async function pull() {
+    if (navigator.onLine === false) return;
     applying = true;
     try {
       const { data, error } = await sb.from("user_data").select("*").eq("user_id", user.id).maybeSingle();
@@ -86,7 +92,7 @@
     if (usageOff || !usageQueue.length || !sb || !user) return;
     const rows = usageQueue.splice(0, 100);
     const { error } = await sb.from("usage_events").insert(rows);
-    if (error) usageOff = true; // table not created yet: stop trying quietly
+    if (error) { if (/usage_events|relation|schema|does not exist/i.test(error.message)) usageOff = true; else usageQueue.unshift(...rows.slice(0, 20)); } // only give up if the table is missing; a network error keeps the counts for later
   }
   brain.onUse = ability => {
     if (!user || usageOff || cfg.shareUsage === false || ability === "stop") return;
@@ -94,6 +100,7 @@
     clearTimeout(usageTimer); usageTimer = setTimeout(flushUsage, 5000);
   };
   document.addEventListener("visibilitychange", () => { if (document.hidden) flushUsage(); });
+  window.addEventListener("online", () => { if (offlineMode) location.reload(); else { if (dirty) push(); flushUsage(); } }); // back online: finish syncing (or fully start up if we opened offline)
   window.sendFeedback = async text => {
     if (!user || !sb) return "Sign in to send feedback.";
     const { error } = await sb.from("feedback").insert({ user_id: user.id, message: text.trim().slice(0, 1000) });
@@ -238,6 +245,7 @@
   });
 
   async function signOut() {
+    if (!sb) { try { localStorage.removeItem(LAST_USER); Object.values(LOCAL).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ } location.reload(); return; } // opened offline: no server to tell
     await sb.auth.signOut();
   }
 
@@ -251,6 +259,7 @@
     if (event === "PASSWORD_RECOVERY") { setMode("recover"); showOverlay(true); return; }
     if (user) {
       if (mode !== "recover") showOverlay(false);
+      if (!offlineMode) { try { localStorage.setItem(LAST_USER, JSON.stringify({ id: user.id, email: user.email, name: displayName() })); } catch { /* ignore */ } }
       if (user.id !== wasId) { // sign-in (not just a token refresh)
         await pull();
         brain.user = (window.preferredName && window.preferredName()) || displayName() || null; // the name you told me wins
@@ -258,7 +267,8 @@
         if (typeof autoStart === "function") autoStart();
       }
     } else {
-      if (wasId) { // signed out: don't leave this person's notes in the browser
+      if (wasId) { try { localStorage.removeItem(LAST_USER); } catch { /* ignore */ }
+        // signed out: don't leave this person's notes in the browser
         Object.values(LOCAL).forEach(k => { try { localStorage.removeItem(k); } catch { /* ignore */ } });
         if (window.rearmReminders) window.rearmReminders();
       }
@@ -270,6 +280,15 @@
 
   function loadScript(src) {
     return new Promise((ok, fail) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = fail; document.head.append(s); });
+  }
+
+  // No connection but this device has signed in before: open the app as that person, without cloud sync.
+  function enterOffline() {
+    let last = null; try { last = JSON.parse(localStorage.getItem(LAST_USER)); } catch { /* ignore */ }
+    if (!last || !last.id) return false;
+    offlineMode = true;
+    onSession({ access_token: null, user: { id: last.id, email: last.email, user_metadata: { full_name: last.name } } }, "OFFLINE");
+    return true;
   }
 
   async function init() {
@@ -293,10 +312,12 @@
     $a("authSkip").onclick = () => showOverlay(false);
     ov.querySelectorAll("[data-p]").forEach(b => (b.onclick = () => oauth(b.dataset.p)));
     renderBar();
+    if (navigator.onLine === false && enterOffline()) return;
     try {
       if (!window.supabase) await loadScript(SUPABASE_JS);
       sb = window.supabase.createClient(A.SUPABASE_URL, A.SUPABASE_ANON_KEY);
     } catch {
+      if (enterOffline()) return;
       say("Couldn't load the sign-in library. Check your connection and reload.", "err");
       return;
     }
@@ -312,7 +333,7 @@
     // Don't await Supabase calls inside this callback (it can deadlock the client), so defer.
     sb.auth.onAuthStateChange((event, s) => setTimeout(() => onSession(s, event), 0));
     const { data } = await sb.auth.getSession();
-    if (!data.session) onSession(null, "INITIAL");
+    if (!data.session) { if (navigator.onLine === false && enterOffline()) return; onSession(null, "INITIAL"); }
   }
 
   init();

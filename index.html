@@ -55,6 +55,8 @@
   .no .eye { background: var(--no); }
 
   .status { color: var(--muted); font-size: 14px; min-height: 21px; text-align: center; }
+  .netpill { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--card); }
+  .netpill[hidden] { display: none; }
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   button { font: inherit; cursor: pointer; }
   .primary { padding: 12px 22px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; }
@@ -102,6 +104,7 @@
     <div class="antenna"></div>
     <div class="head" id="head" title="Tap to talk now"><div class="eyes"><div class="eye"></div><div class="eye"></div></div><div class="mouth"></div></div>
     <div class="status" id="status"></div>
+    <div class="netpill" id="netPill" hidden>Offline: online-only abilities are paused</div>
     <div class="row">
       <button class="primary" id="toggle">Start listening</button>
       <button class="ghost" id="laughBtn" title="Make it laugh">😂 Laugh</button>
@@ -139,6 +142,8 @@
       <input type="checkbox" id="speakReplies" style="justify-self:start">
       <label for="autoListen">Always listening</label>
       <input type="checkbox" id="autoListen" style="justify-self:start">
+      <label for="localSpeech">Offline voice</label>
+      <div><label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" id="localSpeech"> recognise speech on this device</label><span class="hint" id="localSpeechHint">Lets listening work without internet (Chrome downloads a small language pack once).</span></div>
       <label for="notify">Notifications</label>
       <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" id="notify"> when a reminder rings and this tab is hidden</label>
       <label>Install</label>
@@ -471,6 +476,7 @@ async function answer(raw, lang, wakeId) {
   if (GO[lang].test(t) && brain.pending) {
     const p = brain.pending; brain.pending = null;
     if (p.custom) return { text: p.custom.reply, tone: "yes" };
+    const off = brain.offlineCheck && brain.offlineCheck(p.intent, p.text, lang); if (off) return off;
     const r = await p.intent.run(p.text, lang, brain); remember(p.intent, p.text); return r;
   }
 
@@ -496,7 +502,7 @@ async function answer(raw, lang, wakeId) {
 
   if (custom) brain.onUse && brain.onUse("custom");
   if (custom) return { text: custom.kind === "cannot" ? tr.no(custom.reply) : custom.reply, tone: custom.kind === "cannot" ? "no" : "yes" };
-  if (intent) { const r = await intent.run(t, lang, brain); remember(intent, t); return r; }
+  if (intent) { const off = brain.offlineCheck && brain.offlineCheck(intent, t, lang); if (off) return off; const r = await intent.run(t, lang, brain); remember(intent, t); return r; }
   const hello = () => ({ text: (brain.user && tr.greetUser ? tr.greetUser(brain.user) + " " : "") + tr.hello(WAKE[wakeId].name), tone: "yes" });
   if (lang === "en" && /\b(hello|hi|hey)\b/.test(t)) return hello();
   if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return hello();
@@ -516,7 +522,7 @@ async function answer(raw, lang, wakeId) {
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "", notify: false, shareUsage: true };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "", notify: false, shareUsage: true, localSpeech: false };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } window.cloudSave && window.cloudSave(); };
@@ -602,7 +608,8 @@ function speak(what, onDone) {
     const tag = SPEECH[p.lang] || SPEECH[cfg.lang];
     const u = new SpeechSynthesisUtterance(p.text);
     u.lang = tag; u.rate = +cfg.rate; u.pitch = +cfg.pitch; u.volume = +cfg.volume;
-    const v = (p.lang === cfg.lang && voices.find(v => v.voiceURI === cfg.voice)) || voices.find(v => v.lang.toLowerCase().startsWith(tag.slice(0, 2)));
+    const here = voices.filter(v => navigator.onLine !== false || v.localService); // offline: only voices stored on this device
+    const v = (p.lang === cfg.lang && here.find(v => v.voiceURI === cfg.voice)) || here.find(v => v.lang.toLowerCase().startsWith(tag.slice(0, 2)));
     if (v) u.voice = v;
     if (i === 0) u.onstart = () => clearTimeout(guard);
     if (i === parts.length - 1) u.onend = u.onerror = finish;
@@ -690,13 +697,15 @@ function spawn() {
   if (rec) { rec.onend = null; try { rec.abort(); } catch { /* already stopped */ } }
   rec = new SR();
   rec.lang = SPEECH[cfg.lang]; rec.continuous = true; rec.interimResults = false;
+  if (cfg.localSpeech || navigator.onLine === false) { try { rec.processLocally = true; } catch { /* not supported */ } } // on-device recognition (works offline)
   rec.onresult = e => {
     for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onHeard(e.results[i][0].transcript);
   };
   rec.onerror = e => {
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
       stopListening(); statusEl.textContent = "Microphone blocked. Allow it in the browser, or type instead.";
-    }
+    } else if (e.error === "network") statusEl.textContent = "Voice needs internet unless on-device speech is on (Settings > Offline voice). You can still type.";
+    else if (e.error === "language-not-supported") statusEl.textContent = "On-device speech isn't installed for this language yet. Turn on Settings > Offline voice while online.";
   };
   rec.onend = () => { if (listening && !paused) setTimeout(() => { try { rec.start(); } catch { /* busy */ } }, 250); };
   try { rec.start(); } catch { /* busy */ }
@@ -854,6 +863,32 @@ $("lang").onchange = e => {
 };
 $("autoListen").checked = cfg.autoListen;
 $("shareUsage").checked = cfg.shareUsage !== false; $("shareUsage").onchange = e => { cfg.shareUsage = e.target.checked; save(); };
+// Offline: show it, switch the recogniser to on-device, and tell the person what still works.
+async function prepareLocalSpeech() {
+  const hint = $("localSpeechHint");
+  if (!SR || !SR.available) { hint.textContent = "This browser can't recognise speech on the device."; return false; }
+  const opts = { langs: [SPEECH[cfg.lang]], processLocally: true };
+  try {
+    let st = await SR.available(opts);
+    if (st === "downloadable" || st === "downloading") { hint.textContent = "Downloading the language pack… keep this tab open."; st = (await SR.install(opts)) ? "available" : await SR.available(opts); }
+    hint.textContent = st === "available" ? "On-device speech is ready and works offline." : "Not available for this language in this browser.";
+    return st === "available";
+  } catch { hint.textContent = "Couldn't set up on-device speech here."; return false; }
+}
+$("localSpeech").checked = !!cfg.localSpeech;
+$("localSpeech").onchange = async e => {
+  cfg.localSpeech = e.target.checked; save();
+  if (cfg.localSpeech) { const ok = await prepareLocalSpeech(); if (!ok) { cfg.localSpeech = false; e.target.checked = false; save(); } }
+  if (listening) spawn();
+};
+function showNet() {
+  const off = navigator.onLine === false;
+  $("netPill").hidden = !off;
+  if (off && !cfg.localSpeech && listening) statusEl.textContent = "Offline: voice will use the on-device recogniser if this browser has it. Typing always works.";
+}
+window.addEventListener("offline", () => { showNet(); if (listening) spawn(); });
+window.addEventListener("online", () => { showNet(); if (listening) spawn(); });
+showNet();
 $("notify").checked = cfg.notify && "Notification" in window && Notification.permission === "granted";
 $("notify").onchange = async e => {
   if (!e.target.checked) { cfg.notify = false; save(); return; }

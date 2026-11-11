@@ -74,6 +74,13 @@ It's installable: in Chrome (desktop or Android) use the install icon in the add
 
 **Notifications** (Settings > Notifications): when a timer or reminder rings while the app is open but hidden behind other tabs or windows, you get a system notification. A completely closed app can't ring, because that would need a push server.
 
+## Using it without internet
+Install it as an app (or just open it once online) and it keeps working offline:
+- **Works offline:** the time, math, unit conversions (not currencies), timers and reminders, the stopwatch, notes and to-dos, flashcards, the moon phase, countdowns, all the games, jokes, tongue twisters, rain/ocean/white-noise sounds and breathing. The robot's own voice uses the voices stored on your device.
+- **Needs internet:** weather, news, Wikipedia and web answers, translation, definitions, facts and quotes, trivia, history, earthquakes, the space station, holidays, country facts, currency rates, sunrise/sunset and chat. Offline, the robot says so plainly instead of failing.
+- **Voice listening:** Chrome normally sends your audio to Google, so listening needs internet. In **Settings > Offline voice** tick "recognise speech on this device" (while online) and Chrome downloads a small language pack so the wake word and commands work offline too. Typing always works.
+- **Sign-in:** if you've signed in on a device before, it opens offline as you (no cloud sync until you're back online, when it finishes syncing by itself).
+
 ## Admins
 Admins get a **🛡 Admin** button that lists every user with their sign-in method and last sign-in, and lets them **Block** (stops a person signing in, reversible) or **Delete** an account (permanent, removes their saved notes). Admins can't change themselves or each other.
 

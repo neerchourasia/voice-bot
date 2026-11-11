@@ -287,6 +287,10 @@ Object.assign(X.es, {
 });
 X.en.labels.memory = "remember things about you, like your favorite color or birthday"; X.hi.labels.memory = "आपके बारे में बातें याद रख, जैसे पसंदीदा रंग या जन्मदिन"; X.es.labels.memory = "recordar cosas sobre ti, como tu color favorito o tu cumpleaños";
 
+Object.assign(X.en, { offline: "I'm offline, so I can't do that right now. I can still do the time, math, timers, notes, games, sounds and more." });
+Object.assign(X.hi, { offline: "मैं ऑफ़लाइन हूँ, इसलिए अभी यह नहीं कर सकता। समय, गणित, टाइमर, नोट्स, खेल और आवाज़ें अब भी चल सकती हैं।" });
+Object.assign(X.es, { offline: "Estoy sin conexión, así que ahora no puedo hacer eso. Aún puedo decir la hora, hacer cálculos, temporizadores, notas, juegos y sonidos." });
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -1476,6 +1480,16 @@ const mem = {
 // "who am I" also knows the name you told me, and "my birthday" works in the countdown.
 const whoamiRun = whoami.run;
 whoami.run = (t, lang) => (memory().name ? { text: X[lang].youAre(memory().name), tone: "yes" } : whoamiRun(t, lang));
+
+// ---------- Offline: abilities that need the internet say so instead of failing mysteriously ----------
+const ONLINE_ONLY = new Set(["weather", "news", "search", "wiki", "translate", "define", "fact", "quote", "trivia", "wotd", "history", "quake", "iss", "holidays", "country", "sun", "homecity"]);
+brain.offlineCheck = (intent, t, lang) => {
+  if (navigator.onLine !== false) return null;
+  const needs = ONLINE_ONLY.has(intent.id)
+    || (intent.id === "time" && cityOf(t, lang))                          // the time in another city needs a lookup
+    || (intent.id === "convert" && (parseConvert(t) || { a: {} }).a.cat === "money"); // currencies need live rates
+  return needs ? { text: X[lang].offline, tone: "no" } : null;
+};
 
 // ---------- Help ----------
 const help = {
