@@ -4,7 +4,7 @@
   const A = window.APP_CONFIG || {};
   const configured = Boolean(A.SUPABASE_URL && A.SUPABASE_ANON_KEY);
   const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js";
-  const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "volume", "speakReplies", "autoListen", "abilities", "fixes", "customWake"]; // not "voice": voices differ per device
+  const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "volume", "speakReplies", "autoListen", "abilities", "fixes", "customWake", "shareUsage"]; // not "voice": voices differ per device
   const LOCAL = { notes: "voicebot-notes", todo: "voicebot-todo", reminders: "voicebot-reminders", memory: "voicebot-memory" };
 
   let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in", providers = true, memoryColumn = true, warnedMemory = false; // providers: any Google/GitHub button available
@@ -79,6 +79,31 @@
   }
 
   function note(text) { addMsg(text, "bot no"); }
+
+  // ---------- Usage counts (only the ability id, never what was said) and feedback ----------
+  const usageQueue = []; let usageTimer = null, usageOff = false;
+  async function flushUsage() {
+    if (usageOff || !usageQueue.length || !sb || !user) return;
+    const rows = usageQueue.splice(0, 100);
+    const { error } = await sb.from("usage_events").insert(rows);
+    if (error) usageOff = true; // table not created yet: stop trying quietly
+  }
+  brain.onUse = ability => {
+    if (!user || usageOff || cfg.shareUsage === false || ability === "stop") return;
+    usageQueue.push({ user_id: user.id, ability, lang: brain.lang || cfg.lang });
+    clearTimeout(usageTimer); usageTimer = setTimeout(flushUsage, 5000);
+  };
+  document.addEventListener("visibilitychange", () => { if (document.hidden) flushUsage(); });
+  window.sendFeedback = async text => {
+    if (!user || !sb) return "Sign in to send feedback.";
+    const { error } = await sb.from("feedback").insert({ user_id: user.id, message: text.trim().slice(0, 1000) });
+    return error ? (/feedback|relation|schema/i.test(error.message) ? "Feedback isn't set up yet." : error.message) : "Thanks! Sent.";
+  };
+  const showAccountControls = () => { // only meaningful when sign-in is configured
+    for (const id of ["feedbackBox", "shareUsageRow"]) { const el = document.getElementById(id); if (el) { el.hidden = !configured; el.style.display = configured ? "grid" : "none"; } }
+    const lab = document.getElementById("shareUsageLabel"); if (lab) lab.hidden = !configured;
+    const row = document.getElementById("shareUsageRow"); if (row && configured) row.style.display = "flex";
+  };
 
   // ---------- Sign-in screen ----------
   const css = document.createElement("style");
@@ -251,6 +276,12 @@
     document.head.append(css);
     if (window.rearmReminders) window.rearmReminders(); // reminders saved on this device, even when signed out
     if (!configured) return;
+    showAccountControls();
+    document.getElementById("fbSend").onclick = async () => {
+      const t = document.getElementById("fbText").value; if (!t.trim()) return;
+      const m = document.getElementById("fbMsg"); m.textContent = "Sending…"; m.textContent = await window.sendFeedback(t);
+      if (m.textContent.startsWith("Thanks")) document.getElementById("fbText").value = "";
+    };
     document.body.append(ov);
     document.querySelector("main").prepend(bar);
     document.getElementById("muteBtn").after(logoutBtn);

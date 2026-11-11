@@ -86,6 +86,8 @@ Admin rights are decided on the server (`api/admin.js`), matched against the sig
 | `ADMIN_EMAILS` | comma-separated admin emails, e.g. `me@gmail.com,other@gmail.com` |
 | `SUPABASE_SERVICE_ROLE_KEY` | the **secret** key (Supabase > Project Settings > API Keys > Secret keys). Never put this in `config.js` or the repo. |
 
+**Stats and feedback.** The admin panel has a **Stats** tab: users, how many were active in the last 7 days, the most-used abilities, a 14-day chart and the feedback people sent from Settings. Only the *name of the ability* that ran is stored (for example `weather`), never what anyone said, and only for signed-in people, who can switch it off under Settings > Usage. To create the two tables, paste the whole of `supabase/schema.sql` into Supabase's SQL Editor and run it (it is safe to run again).
+
 Because "Confirm email" is off, only list emails you control as admins: a new sign-up can't take over an email that already has an account, but an address nobody has registered yet could be claimed by anyone.
 
 ## Notes

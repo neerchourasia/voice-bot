@@ -18,13 +18,14 @@ async function caller(req) {
 }
 const isAdmin = user => Boolean(user && user.email && adminEmails().includes(user.email.toLowerCase()));
 
-// Calls to Supabase's admin API with the secret key.
-function adminFetch(path, init = {}) {
+// Calls to Supabase with the secret key: the auth admin API, and the database through PostgREST.
+function serviceFetch(path, init = {}) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const headers = { apikey: key, "Content-Type": "application/json", ...(init.headers || {}) };
   if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`; // legacy JWT keys also go in Authorization
-  return fetch(`${base()}/auth/v1/admin${path}`, { ...init, headers });
+  return fetch(`${base()}${path}`, { ...init, headers });
 }
+const adminFetch = (path, init) => serviceFetch(`/auth/v1/admin${path}`, init);
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -48,6 +49,30 @@ module.exports = async (req, res) => {
         blocked: Boolean(u.banned_until && new Date(u.banned_until) > new Date()), admin: isAdmin(u), you: u.id === user.id,
       }));
       return res.status(200).json({ users });
+    }
+
+    if (action === "stats") {
+      const DAY = 864e5, now = Date.now();
+      const ev = await serviceFetch(`/rest/v1/usage_events?select=ability,user_id,created_at&created_at=gte.${new Date(now - 30 * DAY).toISOString()}&order=created_at.desc&limit=50000`);
+      if (ev.status === 404) return res.status(200).json({ missing: true }); // the stats tables haven't been created yet
+      if (!ev.ok) return res.status(502).json({ error: "couldn't read usage" });
+      const events = await ev.json();
+      const ul = await adminFetch("/users?per_page=200").then(r => (r.ok ? r.json() : { users: [] })).catch(() => ({ users: [] }));
+      const emails = Object.fromEntries((ul.users || []).map(u => [u.id, u.email || ""]));
+      const counts = {}, daily = {}, active = new Set();
+      for (const e of events) {
+        counts[e.ability] = (counts[e.ability] || 0) + 1;
+        const t = new Date(e.created_at).getTime();
+        if (now - t < 7 * DAY) active.add(e.user_id);
+        if (now - t < 14 * DAY) { const d = e.created_at.slice(0, 10); daily[d] = (daily[d] || 0) + 1; }
+      }
+      const days = []; for (let i = 13; i >= 0; i--) { const d = new Date(now - i * DAY).toISOString().slice(0, 10); days.push({ day: d, count: daily[d] || 0 }); }
+      const fb = await serviceFetch("/rest/v1/feedback?select=message,created_at,user_id&order=created_at.desc&limit=30");
+      const feedback = fb.ok ? (await fb.json()).map(f => ({ message: f.message, at: f.created_at, email: emails[f.user_id] || "" })) : [];
+      return res.status(200).json({
+        users: (ul.users || []).length, active7: active.size, events30: events.length, truncated: events.length >= 50000,
+        top: Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([ability, count]) => ({ ability, count })), daily: days, feedback,
+      });
     }
 
     if (["block", "unblock", "delete"].includes(action)) {

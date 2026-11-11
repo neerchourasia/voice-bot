@@ -18,6 +18,12 @@
   .adm-who { font-size: 15px; word-break: break-all; } .adm-meta { color: var(--muted); font-size: 12.5px; }
   .adm-tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; background: color-mix(in srgb, var(--accent) 18%, transparent); }
   .adm-tag.blocked { background: color-mix(in srgb, var(--no) 22%, transparent); }
+  .adm-tabs { display: flex; gap: 8px; } .adm-tabs .on { border-color: var(--accent); color: var(--accent); }
+  .adm-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .adm-stat { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .adm-stat b { display: block; font-size: 22px; } .adm-stat span { color: var(--muted); font-size: 12.5px; }
+  .adm-bar { display: grid; grid-template-columns: 110px 1fr 40px; gap: 8px; align-items: center; font-size: 13px; } .adm-bar i { display: block; height: 10px; border-radius: 6px; background: var(--accent); }
+  .adm-days { display: flex; align-items: flex-end; gap: 4px; height: 70px; } .adm-days i { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85; }
+  .adm-fb { border-left: 3px solid var(--line); padding: 4px 10px; font-size: 14px; } .adm-fb small { color: var(--muted); display: block; }
   .adm-actions { display: flex; gap: 6px; } .adm-actions button { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 13px; }
   .adm-actions .danger { color: var(--no); }`;
 
@@ -27,14 +33,45 @@
     panel = document.createElement("div");
     panel.id = "adminPanel"; panel.hidden = true;
     panel.innerHTML = `<div class="adm-card" role="dialog" aria-modal="true" aria-labelledby="admTitle">
-      <div class="adm-head"><h2 id="admTitle">Admin: users</h2><button class="ghost" id="admClose" type="button">Close</button></div>
+      <div class="adm-head"><h2 id="admTitle">Admin</h2><button class="ghost" id="admClose" type="button">Close</button></div>
+      <div class="adm-tabs"><button class="ghost on" id="admTabUsers" type="button">Users</button><button class="ghost" id="admTabStats" type="button">Stats</button></div>
       <p class="adm-msg" id="admMsg" role="status"></p><div id="admList" style="display:grid;gap:8px"></div></div>`;
     document.body.append(panel);
     panel.querySelector("#admClose").onclick = () => (panel.hidden = true);
+    panel.querySelector("#admTabUsers").onclick = () => showTab("users");
+    panel.querySelector("#admTabStats").onclick = () => showTab("stats");
     panel.addEventListener("click", e => { if (e.target === panel) panel.hidden = true; });
   }
   const say = (t, err) => { const m = document.getElementById("admMsg"); m.textContent = t || ""; m.className = "adm-msg" + (err ? " err" : ""); };
 
+  let tab = "users";
+  function showTab(t) {
+    tab = t;
+    panel.querySelector("#admTabUsers").classList.toggle("on", t === "users"); panel.querySelector("#admTabStats").classList.toggle("on", t === "stats");
+    return t === "stats" ? loadStats() : load();
+  }
+  const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+  async function loadStats() {
+    say("Loading…"); const list = document.getElementById("admList"); list.textContent = "";
+    const r = await call("/api/admin?action=stats"); const j = await r.json().catch(() => ({}));
+    if (!r.ok) return say(j.error || "Couldn't load stats.", true);
+    if (j.missing) return say("The stats tables don't exist yet. Run the newest part of supabase/schema.sql in Supabase.", true);
+    say(j.truncated ? "Showing the most recent 50,000 events." : "");
+    const cards = el("div", undefined, "adm-cards");
+    for (const [n, label] of [[j.users, "users"], [j.active7, "active in 7 days"], [j.events30, "ability uses, 30 days"]]) { const c = el("div", undefined, "adm-stat"); c.append(el("b", String(n)), el("span", label)); cards.append(c); }
+    list.append(cards);
+    const max = Math.max(1, ...j.top.map(t => t.count));
+    list.append(el("h3", "Most used abilities"));
+    if (!j.top.length) list.append(el("p", "Nothing yet. Counts appear once signed-in people use the robot.", "adm-msg"));
+    for (const t of j.top) { const row = el("div", undefined, "adm-bar"); const bar = el("i"); bar.style.width = Math.round((t.count / max) * 100) + "%"; const wrap = el("div"); wrap.append(bar); row.append(el("span", t.ability), wrap, el("span", String(t.count))); list.append(row); }
+    list.append(el("h3", "Last 14 days"));
+    const dmax = Math.max(1, ...j.daily.map(d => d.count)), days = el("div", undefined, "adm-days");
+    for (const d of j.daily) { const b = el("i"); b.style.height = Math.max(3, Math.round((d.count / dmax) * 100)) + "%"; b.title = `${d.day}: ${d.count}`; days.append(b); }
+    list.append(days);
+    list.append(el("h3", "Feedback"));
+    if (!j.feedback.length) list.append(el("p", "No feedback yet.", "adm-msg"));
+    for (const f of j.feedback) { const d = el("div", undefined, "adm-fb"); d.append(el("div", f.message), el("small", `${f.email || "someone"} · ${new Date(f.at).toLocaleString()}`)); list.append(d); }
+  }
   async function load() {
     say("Loading…");
     const r = await call("/api/admin?action=users");
@@ -86,7 +123,7 @@
       build();
       button = document.createElement("button");
       button.className = "ghost"; button.id = "adminBtn"; button.textContent = "🛡 Admin";
-      button.onclick = () => { panel.hidden = false; load(); };
+      button.onclick = () => { panel.hidden = false; showTab(tab); };
       (document.getElementById("logoutBtn") || document.getElementById("muteBtn")).after(button);
     }
     if (button) button.hidden = !isAdmin;

@@ -143,6 +143,8 @@
       <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" id="notify"> when a reminder rings and this tab is hidden</label>
       <label>Install</label>
       <div><button type="button" class="ghost" id="installBtn" hidden>Install as an app</button><span class="hint" id="installHint">Use your browser's “Install” or “Add to Home Screen”.</span></div>
+      <label for="shareUsage" id="shareUsageLabel" hidden>Usage</label>
+      <label id="shareUsageRow" hidden style="display:none;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" id="shareUsage"> share which abilities I use (never what I say)</label>
       <label for="voice">Voice</label>
       <select id="voice"></select>
       <label for="rate">Speed</label>
@@ -150,6 +152,12 @@
       <label for="pitch">Pitch</label>
       <input type="range" id="pitch" min="0.5" max="1.8" step="0.05">
       <div class="full row"><button type="button" class="ghost" id="testVoice">Test voice</button></div>
+
+      <div class="full" id="feedbackBox" hidden style="display:none;gap:8px">
+        <h3 style="margin:6px 0 0">Feedback</h3>
+        <textarea id="fbText" rows="3" maxlength="1000" placeholder="Something broken, or something you'd like it to do? Tell the admin."></textarea>
+        <div class="row" style="justify-content:flex-start"><button type="button" class="ghost" id="fbSend">Send feedback</button><span class="hint" id="fbMsg"></span></div>
+      </div>
 
       <h3 class="full">Fix mishearing</h3>
       <p class="hint full">If it keeps writing the wrong word, teach it: whenever it hears the first, treat it as the second. Tap a recent phrase to copy it in.</p>
@@ -448,10 +456,11 @@ function matchCustom(t) {
 
 // The last ability that ran, so a follow-up like "and tomorrow?" knows what it refers to.
 const NO_CTX = new Set(["followup", "again", "stop", "speed", "lang", "help"]);
-const remember = (intent, t) => { if (!NO_CTX.has(intent.id)) brain.ctx = { id: intent.id, text: t, at: Date.now() }; };
+const remember = (intent, t) => { brain.onUse && brain.onUse(intent.id); if (!NO_CTX.has(intent.id)) brain.ctx = { id: intent.id, text: t, at: Date.now() }; };
 
 async function answer(raw, lang, wakeId) {
   const t = norm(raw), tr = T[lang];
+  brain.lang = lang;
 
   if (brain.awaiting) {
     const st = brain.awaiting; brain.awaiting = null;
@@ -485,6 +494,7 @@ async function answer(raw, lang, wakeId) {
     return { text: tr.maybe(Object.values(tr.labels).slice(0, 5).join(", ")), tone: "no" };
   }
 
+  if (custom) brain.onUse && brain.onUse("custom");
   if (custom) return { text: custom.kind === "cannot" ? tr.no(custom.reply) : custom.reply, tone: custom.kind === "cannot" ? "no" : "yes" };
   if (intent) { const r = await intent.run(t, lang, brain); remember(intent, t); return r; }
   const hello = () => ({ text: (brain.user && tr.greetUser ? tr.greetUser(brain.user) + " " : "") + tr.hello(WAKE[wakeId].name), tone: "yes" });
@@ -492,7 +502,8 @@ async function answer(raw, lang, wakeId) {
   if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return hello();
   if (lang === "es" && /\b(hola|buenas)\b/.test(t)) return hello();
   const chat = brain.fallback && (await brain.fallback(raw, lang));
-  if (chat) return chat;
+  if (chat) { brain.onUse && brain.onUse("chat"); return chat; }
+  brain.onUse && brain.onUse("unknown");
   return { text: tr.unknown, tone: "no" };
 }
 
@@ -505,7 +516,7 @@ async function answer(raw, lang, wakeId) {
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "", notify: false };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "", notify: false, shareUsage: true };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } window.cloudSave && window.cloudSave(); };
@@ -842,6 +853,7 @@ $("lang").onchange = e => {
   if (listening) spawn();
 };
 $("autoListen").checked = cfg.autoListen;
+$("shareUsage").checked = cfg.shareUsage !== false; $("shareUsage").onchange = e => { cfg.shareUsage = e.target.checked; save(); };
 $("notify").checked = cfg.notify && "Notification" in window && Notification.permission === "granted";
 $("notify").onchange = async e => {
   if (!e.target.checked) { cfg.notify = false; save(); return; }
