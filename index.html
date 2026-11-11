@@ -423,6 +423,10 @@ function matchCustom(t) {
   return brain.abilities.find(a => a.keys.some(k => k && t.includes(k)));
 }
 
+// The last ability that ran, so a follow-up like "and tomorrow?" knows what it refers to.
+const NO_CTX = new Set(["followup", "again", "stop", "speed", "lang", "help"]);
+const remember = (intent, t) => { if (!NO_CTX.has(intent.id)) brain.ctx = { id: intent.id, text: t, at: Date.now() }; };
+
 async function answer(raw, lang, wakeId) {
   const t = norm(raw), tr = T[lang];
 
@@ -434,7 +438,8 @@ async function answer(raw, lang, wakeId) {
   }
   if (GO[lang].test(t) && brain.pending) {
     const p = brain.pending; brain.pending = null;
-    return p.custom ? { text: p.custom.reply, tone: "yes" } : p.intent.run(p.text, lang, brain);
+    if (p.custom) return { text: p.custom.reply, tone: "yes" };
+    const r = await p.intent.run(p.text, lang, brain); remember(p.intent, p.text); return r;
   }
 
   const custom = matchCustom(t);
@@ -458,7 +463,7 @@ async function answer(raw, lang, wakeId) {
   }
 
   if (custom) return { text: custom.kind === "cannot" ? tr.no(custom.reply) : custom.reply, tone: custom.kind === "cannot" ? "no" : "yes" };
-  if (intent) return intent.run(t, lang, brain);
+  if (intent) { const r = await intent.run(t, lang, brain); remember(intent, t); return r; }
   const hello = () => ({ text: (brain.user && tr.greetUser ? tr.greetUser(brain.user) + " " : "") + tr.hello(WAKE[wakeId].name), tone: "yes" });
   if (lang === "en" && /\b(hello|hi|hey)\b/.test(t)) return hello();
   if (lang === "hi" && /नमस्ते|हैलो/.test(t)) return hello();
@@ -477,7 +482,7 @@ async function answer(raw, lang, wakeId) {
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, abilities: [] };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [] };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } window.cloudSave && window.cloudSave(); };
@@ -537,7 +542,7 @@ function speak(what, onDone) {
   parts.forEach((p, i) => {
     const tag = SPEECH[p.lang] || SPEECH[cfg.lang];
     const u = new SpeechSynthesisUtterance(p.text);
-    u.lang = tag; u.rate = +cfg.rate; u.pitch = +cfg.pitch;
+    u.lang = tag; u.rate = +cfg.rate; u.pitch = +cfg.pitch; u.volume = +cfg.volume;
     const v = (p.lang === cfg.lang && voices.find(v => v.voiceURI === cfg.voice)) || voices.find(v => v.lang.toLowerCase().startsWith(tag.slice(0, 2)));
     if (v) u.voice = v;
     if (i === 0) u.onstart = () => clearTimeout(guard);
@@ -644,8 +649,17 @@ function stopListening() {
   $("toggle").textContent = "Start listening"; setMode("wake");
 }
 
+function stopSpeaking() {
+  brain.awaiting = null; brain.pending = null; // a pending question is cancelled too
+  if ("speechSynthesis" in window) speechSynthesis.cancel(); // fires the usual "finished" path
+}
+
 function onHeard(text) {
-  if (speaking || paused) return; // ignore the robot hearing itself
+  if (speaking) { // while it talks, only a bare "stop" counts, so it can't be set off by hearing itself
+    if (isStopPhrase(text, cfg.lang, cfg.wake)) stopSpeaking();
+    return;
+  }
+  if (paused) return;
   if (mode === "command") { setMode("wake"); handle(text); return; }
   const rest = findWake(text, cfg.wake, cfg.lang);
   if (rest === null) return;
@@ -661,6 +675,7 @@ async function handle(text) {
   let a;
   try { a = await answer(text, cfg.lang, cfg.wake); }
   catch { a = { text: tr().error, tone: "no" }; }
+  if (!a.replay) brain.last = { text: a.text, segments: a.segments };
   addMsg(a.text, "bot " + a.tone + (a.silent ? " laughmsg" : ""), a.link);
   if (a.openUrl) { // "noopener" would make window.open return null, so detach the opener by hand
     const w = window.open(a.openUrl, "_blank");
@@ -678,6 +693,7 @@ async function handle(text) {
     setVisual("speaking");
     setTimeout(after, laugh());
   };
+  if (!a.silent && listening) { paused = false; spawn(); } // keep the mic open while it talks, only so "stop" works
   if (a.silent) finish(); else speak(a.segments || a.text, finish);
 }
 

@@ -119,6 +119,31 @@ X.hi.labels.moon = "चाँद की स्थिति बता";
 X.es.labels.moon = "decirte la fase de la luna";
 X.en.chips.push("What's the moon phase?"); X.hi.chips.push("चाँद की क्या स्थिति है?"); X.es.chips.push("¿Qué fase de la luna es hoy?");
 
+Object.assign(X.en, {
+  stopOk: "Okay.", noLast: "I haven't said anything yet.",
+  slower: "Okay, speaking slower.", faster: "Okay, speaking faster.", slowest: "That's as slow as I go.", fastest: "That's as fast as I go.",
+  louder: "Okay, louder.", quieter: "Okay, quieter.", fullvol: "I'm already at full volume.", minvol: "I can't go any quieter.",
+  langSet: "Okay, I'll speak English.", langNeed: "Which language? English, Hindi or Spanish.",
+  todayOnly: "I can only tell you about today for that. Try asking with a city name.",
+});
+Object.assign(X.hi, {
+  stopOk: "ठीक है।", noLast: "मैंने अभी तक कुछ नहीं कहा।",
+  slower: "ठीक है, धीरे बोलूँगा।", faster: "ठीक है, तेज़ बोलूँगा।", slowest: "इससे धीमा नहीं बोल सकता।", fastest: "इससे तेज़ नहीं बोल सकता।",
+  louder: "ठीक है, आवाज़ बढ़ा दी।", quieter: "ठीक है, आवाज़ कम कर दी।", fullvol: "आवाज़ पहले से पूरी है।", minvol: "इससे कम आवाज़ नहीं हो सकती।",
+  langSet: "ठीक है, अब मैं हिन्दी में बोलूँगा।", langNeed: "कौन सी भाषा? अंग्रेज़ी, हिन्दी या स्पेनिश।",
+  todayOnly: "इसके लिए मैं सिर्फ़ आज की जानकारी दे सकता हूँ। किसी शहर का नाम बोलकर पूछिए।",
+});
+Object.assign(X.es, {
+  stopOk: "Vale.", noLast: "Todavía no he dicho nada.",
+  slower: "Vale, hablaré más lento.", faster: "Vale, hablaré más rápido.", slowest: "No puedo hablar más lento.", fastest: "No puedo hablar más rápido.",
+  louder: "Vale, más fuerte.", quieter: "Vale, más bajo.", fullvol: "Ya estoy a todo volumen.", minvol: "No puedo hablar más bajo.",
+  langSet: "Vale, ahora hablo español.", langNeed: "¿Qué idioma? Inglés, hindi o español.",
+  todayOnly: "Para eso solo puedo decirte lo de hoy. Prueba con el nombre de una ciudad.",
+});
+Object.assign(X.en.labels, { stop: "stop talking when you say stop", again: "repeat my last answer", followup: "answer follow-ups like “and tomorrow?”", speed: "speak slower, faster, louder or quieter", lang: "switch between English, Hindi and Spanish" });
+Object.assign(X.hi.labels, { stop: "रुको कहने पर चुप", again: "पिछला जवाब दोहरा", followup: "“और कल?” जैसे सवालों का जवाब दे", speed: "धीरे या तेज़ बोल", lang: "अंग्रेज़ी, हिन्दी और स्पेनिश में बदल" });
+Object.assign(X.es.labels, { stop: "callarme cuando digas para", again: "repetir mi última respuesta", followup: "responder preguntas como «¿y mañana?»", speed: "hablar más lento, rápido, fuerte o bajo", lang: "cambiar entre inglés, hindi y español" });
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -649,6 +674,113 @@ const whoami = {
   run: (t, lang) => (brain.user ? { text: X[lang].youAre(brain.user), tone: "yes" } : { text: X[lang].noName, tone: "no" }),
 };
 
+// ---------- Voice smarts: stop, say that again, follow-ups, speed and volume, switch language ----------
+const STOP_RE = {
+  en: /^(?:please |ok |okay )?(?:stop|quiet|enough|cancel|stop it|stop talking|be quiet|shut up|that's enough)$/,
+  hi: /^(?:रुको|चुप|चुप हो जाओ|बस|बस करो|बंद करो|स्टॉप)$/,
+  es: /^(?:para|basta|silencio|cállate|callate|detente|ya basta|ya)$/,
+};
+// Used by the UI while the robot is talking: a bare "stop" (optionally after the wake word) interrupts it.
+function isStopPhrase(text, lang, wakeId) {
+  let t = norm(text);
+  const afterWake = findWake(t, wakeId, lang);
+  if (afterWake !== null) t = afterWake;
+  return STOP_RE[lang].test(t);
+}
+const stop = {
+  id: "stop",
+  test: { en: /^(?:please |ok |okay )?(?:stop|quiet|enough|cancel|never ?mind|forget it|stop it)$/, hi: STOP_RE.hi, es: /^(?:para|basta|silencio|cállate|callate|detente|déjalo|dejalo|olvídalo|olvidalo)$/ },
+  run: (t, lang, ctx) => { ctx.pending = null; ctx.awaiting = null; return { text: X[lang].stopOk, tone: "yes" }; },
+};
+
+const again = {
+  id: "again",
+  test: { en: /^(?:please )?(?:say that again|say it again|repeat that|repeat it|what did you say|come again|pardon)$/, hi: /फिर से बोलो|दोबारा बोलो|क्या कहा|फिर से कहो/, es: /repite eso|otra vez|qué dijiste|que dijiste|repítelo|repitelo/ },
+  run: (t, lang) => (brain.last ? { ...brain.last, tone: "yes", replay: true } : { text: X[lang].noLast, tone: "no" }),
+};
+
+// "and tomorrow?", "what about Tokyo?", "and another one?": re-run the last ability with the new bit.
+const FOLLOW_RE = { en: /^(?:and what about|and|what about|how about)\s+(.+)/, hi: /^(?:और|तो|फिर)\s+(.+)/, es: /^(?:y qué tal|y|qué tal|que tal)\s+(.+)/ };
+const FOLLOW_REPEAT = new Set(["joke", "fact", "quote", "coin", "dice", "pick", "riddle", "trivia"]); // "and another one?"
+const FOLLOW_BUILD = { // ability id -> language -> (rest, previousText) => text for the same ability
+  weather: { en: r => `weather in ${r}`, hi: r => `${r} मौसम`, es: r => `clima en ${r}` },
+  time: { en: r => `time in ${r}`, hi: r => `${r} समय`, es: r => `hora en ${r}` },
+  sun: {
+    en: (r, p) => `${/sunset/.test(p) ? "sunset" : "sunrise"} in ${r}`, hi: (r, p) => `${r} ${/सूर्यास्त/.test(p) ? "सूर्यास्त" : "सूर्योदय"}`,
+    es: (r, p) => `${/atardecer|puesta/.test(p) ? "atardecer" : "amanecer"} en ${r}`,
+  },
+  moon: { en: r => `moon phase ${r}`, hi: r => `चाँद की स्थिति ${r}`, es: r => `fase de la luna ${r}` },
+  countdown: { en: r => `days until ${r}`, hi: r => `${r} कितने दिन बाकी`, es: r => `cuántos días faltan para ${r}` },
+  wiki: { en: r => `who is ${r}`, hi: r => `${r} कौन है`, es: r => `quién es ${r}` },
+  define: { en: r => `define ${r}`, hi: r => `${r} का मतलब`, es: r => `definición de ${r}` },
+  news: { en: r => `news about ${r}`, hi: r => `${r} की खबर`, es: r => `noticias de ${r}` },
+  convert: { en: (r, p) => swapNumber(p, r), hi: (r, p) => swapNumber(p, r), es: (r, p) => swapNumber(p, r) }, // "and 20 km?"
+};
+function swapNumber(previous, rest) {
+  const n = rest.match(/-?[\d,]*\.?\d+/);
+  return n ? previous.replace(/-?[\d,]*\.?\d+/, n[0]) : null;
+}
+const followFresh = () => brain.ctx && Date.now() - brain.ctx.at < 3 * 60 * 1000;
+const followup = {
+  id: "followup",
+  test: any(t => {
+    if (!followFresh()) return false;
+    const lang = ["en", "hi", "es"].find(l => FOLLOW_RE[l].test(t));
+    return Boolean(lang && (FOLLOW_REPEAT.has(brain.ctx.id) || FOLLOW_BUILD[brain.ctx.id]));
+  }),
+  async run(t, lang, ctx) {
+    const m = t.match(FOLLOW_RE[lang]);
+    const rest = m ? m[1].replace(/^(?:in|for|at|on|the)\s+/, "").trim() : "";
+    const prev = brain.ctx, target = INTENTS.find(i => i.id === prev.id);
+    // Weather, time and sun are about a city, and only for today: "and tomorrow?" can't be answered.
+    if (["weather", "time", "sun"].includes(prev.id) && /^(?:tomorrow|today|tonight|now|yesterday|कल|आज|अभी|mañana|hoy|ahora|ayer)$/.test(rest)) return { text: X[lang].todayOnly, tone: "no" };
+    const text = FOLLOW_REPEAT.has(prev.id) ? prev.text : FOLLOW_BUILD[prev.id][lang](rest, prev.text);
+    if (!text || !target) return { text: T[lang].unknown, tone: "no" };
+    return target.run(text, lang, ctx);
+  },
+};
+
+const speed = {
+  id: "speed",
+  test: {
+    en: /\b(?:speak|talk)\s+(?:a bit |a little |much )?(?:slower|faster|slowly|quickly|louder|quieter|softer)\b|\b(?:slow down|speed up|louder|quieter|softer|turn it up|turn it down|speak up)\b/,
+    hi: /धीरे बोलो|धीमे बोलो|तेज़ बोलो|तेज बोलो|ज़ोर से बोलो|धीमी आवाज़/, es: /habla (?:más )?(?:lento|despacio|rápido|fuerte|bajo)|más (?:lento|rápido|fuerte|bajo)/,
+  },
+  run(t, lang) {
+    const x = X[lang], clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(v * 100) / 100));
+    const louder = /louder|turn it up|speak up|ज़ोर|fuerte/.test(t), quieter = /quieter|softer|turn it down|धीमी आवाज़|\bbajo\b/.test(t);
+    if (louder || quieter) {
+      const v = clamp(+cfg.volume + (louder ? 0.25 : -0.25), 0.25, 1);
+      if (v === +cfg.volume) return { text: louder ? x.fullvol : x.minvol, tone: "yes" };
+      cfg.volume = v; save();
+      return { text: louder ? x.louder : x.quieter, tone: "yes" };
+    }
+    const slower = /slower|slowly|slow down|धीरे|धीमे|lento|despacio/.test(t);
+    const r = clamp(+cfg.rate + (slower ? -0.2 : 0.2), 0.6, 1.6);
+    if (r === +cfg.rate) return { text: slower ? x.slowest : x.fastest, tone: "yes" };
+    cfg.rate = r; save(); $("rate").value = r;
+    return { text: slower ? x.slower : x.faster, tone: "yes" };
+  },
+};
+
+const switchLang = {
+  id: "lang",
+  test: {
+    en: /\b(?:speak|talk|switch to|reply in|change (?:the )?language to)\s+(?:in\s+)?(?:hindi|english|spanish)\b/,
+    hi: /(?:हिंदी|हिन्दी|अंग्रेज़ी|अंग्रेजी|इंग्लिश|स्पेनिश)\s+में\s+(?:बोलो|बात करो)|भाषा बदलो/,
+    es: /(?:habla|hablemos|cambia(?: el idioma)? a)\s+(?:en\s+)?(?:español|espanol|inglés|ingles|hindi)/,
+  },
+  run(t, lang) {
+    const target = findLang(t);
+    if (!target || !["en", "hi", "es"].includes(target.code)) return { text: X[lang].langNeed, tone: "yes" };
+    const code = target.code;
+    cfg.lang = code; cfg.voice = ""; save();
+    $("lang").value = code; loadVoices(); renderChips(); renderHeader();
+    if (listening) spawn(); // recognise the new language
+    return { text: X[code].langSet, tone: "yes" };
+  },
+};
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -660,7 +792,7 @@ const help = {
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once
