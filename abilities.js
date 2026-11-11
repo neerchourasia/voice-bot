@@ -218,6 +218,55 @@ Object.assign(X.en.labels, { history: "tell you what happened on this day in his
 Object.assign(X.hi.labels, { history: "इतिहास में आज के दिन की घटनाएँ बता", quake: "हाल के भूकंपों की जानकारी दे", iss: "अंतरिक्ष स्टेशन कहाँ है बता", holidays: "अगली सार्वजनिक छुट्टियाँ बता", country: "किसी देश की राजधानी और आबादी बता" });
 Object.assign(X.es.labels, { history: "contarte qué pasó un día como hoy", quake: "informarte de terremotos recientes", iss: "decirte dónde está la estación espacial", holidays: "decirte los próximos festivos", country: "darte la capital y la población de un país" });
 
+Object.assign(X.en, {
+  blank: "blank", hmNoLang: "Hangman works in English and Spanish. Switch language and ask again.",
+  hmStart: (w, l) => `Let's play hangman! The word: ${w}. You have ${l} lives. Say a letter.`, hmTry: l => `You've already tried ${l}.`, hmAsk: "Say one letter, or try the whole word.",
+  hmHit: (w, l) => `Yes! ${w}. ${l} lives left.`, hmMiss: (w, l) => `No. ${w}. ${l} ${plural(l, "life", "lives")} left.`, hmWin: w => `You got it! The word was ${w}. Well done!`, hmLose: w => `Out of lives. The word was ${w}. Better luck next time!`,
+  rpsStart: "Rock, paper, scissors! Say your move.", rpsAsk: "Say rock, paper or scissors.", rpsNames: ["rock", "paper", "scissors"],
+  rpsOut: (y, m, r, a, b) => `You chose ${y}, I chose ${m}. ${r === 1 ? "You win!" : r === 0 ? "It's a tie." : "I win!"} Score: you ${a}, me ${b}. Another round?`,
+  gsStart: "I'm thinking of a number between 1 and 100. Take a guess!", gsAsk: "Say a number between 1 and 100.", gsHigher: "Higher.", gsLower: "Lower.", gsWin: n => `Got it in ${n} ${plural(n, "try", "tries")}!`,
+  mqStart: "Math quiz time! Five questions.", mqQ: (n, a, op, b) => `Question ${n}: what is ${a} ${op} ${b}?`, mqOps: ["plus", "minus", "times"],
+  mqRight: "Correct!", mqWrong: a => `Not quite, it's ${a}.`, mqAsk: "Say a number.", mqEnd: s => `Quiz finished. You got ${s} out of 5.`,
+  twisters: ["She sells seashells by the seashore.", "Peter Piper picked a peck of pickled peppers.", "How much wood would a woodchuck chuck if a woodchuck could chuck wood?", "Red lorry, yellow lorry.", "Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair."],
+  wotdIntro: "Word of the day:", wotdFail: "I couldn't fetch the word of the day.",
+  fcAdded: (f, b) => `Saved flashcard: ${f} means ${b}.`, fcNeed: "Say it like “add flashcard bonjour means hello”.", fcNone: "You have no flashcards yet. Add one: “add flashcard bonjour means hello”.",
+  fcList: (n, s) => `You have ${n} ${plural(n, "flashcard", "flashcards")}: ${s}.`, fcCleared: "Flashcards cleared.", fcItem: (f, b) => `${f} means ${b}`,
+  fcAsk: (n, f) => `Card ${n}: what does ${f} mean?`, fcRight: "Correct!", fcWrong: b => `Not quite. It means ${b}.`, fcEnd: (s, n) => `Done. You got ${s} out of ${n}.`,
+});
+Object.assign(X.hi, {
+  blank: "खाली", hmNoLang: "हैंगमैन अंग्रेज़ी और स्पेनिश में चलता है। भाषा बदलकर फिर पूछिए।",
+  hmStart: (w, l) => `चलो हैंगमैन खेलते हैं! शब्द: ${w}। आपके पास ${l} जानें हैं। कोई अक्षर बोलिए।`, hmTry: l => `आप ${l} पहले आज़मा चुके हैं।`, hmAsk: "एक अक्षर बोलिए, या पूरा शब्द बताइए।",
+  hmHit: (w, l) => `सही! ${w}। ${l} जानें बाकी हैं।`, hmMiss: (w, l) => `नहीं। ${w}। ${l} जानें बाकी हैं।`, hmWin: w => `आपने पकड़ लिया! शब्द था ${w}। शाबाश!`, hmLose: w => `जानें खत्म। शब्द था ${w}। अगली बार किस्मत साथ दे!`,
+  rpsStart: "पत्थर, कागज़, कैंची! अपनी चाल बोलिए।", rpsAsk: "पत्थर, कागज़ या कैंची बोलिए।", rpsNames: ["पत्थर", "कागज़", "कैंची"],
+  rpsOut: (y, m, r, a, b) => `आपने ${y} चुना, मैंने ${m}। ${r === 1 ? "आप जीते!" : r === 0 ? "बराबरी रही।" : "मैं जीता!"} स्कोर: आप ${a}, मैं ${b}। एक और राउंड?`,
+  gsStart: "मैंने 1 से 100 के बीच एक संख्या सोची है। अंदाज़ा लगाइए!", gsAsk: "1 से 100 के बीच कोई संख्या बोलिए।", gsHigher: "और बड़ी।", gsLower: "और छोटी।", gsWin: n => `${n} कोशिश में सही!`,
+  mqStart: "गणित क्विज़ का समय! पाँच सवाल।", mqQ: (n, a, op, b) => `सवाल ${n}: ${a} ${op} ${b} कितना होता है?`, mqOps: ["जमा", "घटा", "गुणा"],
+  mqRight: "सही!", mqWrong: a => `ठीक नहीं, जवाब ${a} है।`, mqAsk: "कोई संख्या बोलिए।", mqEnd: s => `क्विज़ खत्म। आपके पाँच में से ${s} सही रहे।`,
+  twisters: ["कच्चा पापड़, पक्का पापड़।", "चंदू के चाचा ने चंदू की चाची को चाँदनी चौक में चाँदी की चम्मच से चटनी चटाई।", "छह छोटे छुपे छछूंदर।", "सात सुन्दर सूरज सरोवर सजाते।"],
+  wotdIntro: "आज का शब्द:", wotdFail: "आज का शब्द नहीं मिल पाया।",
+  fcAdded: (f, b) => `फ्लैशकार्ड सेव हुआ: ${f} का मतलब ${b}।`, fcNeed: "ऐसे कहिए “फ्लैशकार्ड जोड़ो bonjour का मतलब hello”।", fcNone: "अभी आपके पास कोई फ्लैशकार्ड नहीं है।",
+  fcList: (n, s) => `आपके ${n} फ्लैशकार्ड हैं: ${s}।`, fcCleared: "फ्लैशकार्ड मिटा दिए।", fcItem: (f, b) => `${f} का मतलब ${b}`,
+  fcAsk: (n, f) => `कार्ड ${n}: ${f} का मतलब क्या है?`, fcRight: "सही!", fcWrong: b => `ठीक नहीं। मतलब है ${b}।`, fcEnd: (s, n) => `खत्म। ${n} में से ${s} सही।`,
+});
+Object.assign(X.es, {
+  blank: "hueco", hmNoLang: "El ahorcado funciona en inglés y español. Cambia de idioma y vuelve a pedirlo.",
+  hmStart: (w, l) => `¡Juguemos al ahorcado! La palabra: ${w}. Tienes ${l} vidas. Di una letra.`, hmTry: l => `Ya probaste ${l}.`, hmAsk: "Di una letra, o intenta la palabra completa.",
+  hmHit: (w, l) => `¡Sí! ${w}. Te quedan ${l} vidas.`, hmMiss: (w, l) => `No. ${w}. Te quedan ${l} ${plural(l, "vida", "vidas")}.`, hmWin: w => `¡Lo lograste! La palabra era ${w}. ¡Muy bien!`, hmLose: w => `Sin vidas. La palabra era ${w}. ¡Suerte la próxima!`,
+  rpsStart: "¡Piedra, papel o tijera! Di tu jugada.", rpsAsk: "Di piedra, papel o tijera.", rpsNames: ["piedra", "papel", "tijera"],
+  rpsOut: (y, m, r, a, b) => `Elegiste ${y}, yo elegí ${m}. ${r === 1 ? "¡Ganas!" : r === 0 ? "Empate." : "¡Gano yo!"} Marcador: tú ${a}, yo ${b}. ¿Otra ronda?`,
+  gsStart: "Pienso en un número del 1 al 100. ¡Adivina!", gsAsk: "Di un número del 1 al 100.", gsHigher: "Más alto.", gsLower: "Más bajo.", gsWin: n => `¡Lo adivinaste en ${n} ${plural(n, "intento", "intentos")}!`,
+  mqStart: "¡Hora del quiz de matemáticas! Cinco preguntas.", mqQ: (n, a, op, b) => `Pregunta ${n}: ¿cuánto es ${a} ${op} ${b}?`, mqOps: ["más", "menos", "por"],
+  mqRight: "¡Correcto!", mqWrong: a => `No exactamente, es ${a}.`, mqAsk: "Di un número.", mqEnd: s => `Quiz terminado. Acertaste ${s} de 5.`,
+  twisters: ["Tres tristes tigres tragaban trigo en un trigal.", "Pablito clavó un clavito en la calva de un calvito.", "El perro de San Roque no tiene rabo porque Ramón Ramírez se lo ha robado.", "Pedro Pérez pintor pinta paisajes por poco precio."],
+  wotdIntro: "Palabra del día:", wotdFail: "No pude obtener la palabra del día.",
+  fcAdded: (f, b) => `Tarjeta guardada: ${f} significa ${b}.`, fcNeed: "Dilo así: «añade tarjeta bonjour significa hola».", fcNone: "Todavía no tienes tarjetas.",
+  fcList: (n, s) => `Tienes ${n} ${plural(n, "tarjeta", "tarjetas")}: ${s}.`, fcCleared: "Tarjetas borradas.", fcItem: (f, b) => `${f} significa ${b}`,
+  fcAsk: (n, f) => `Tarjeta ${n}: ¿qué significa ${f}?`, fcRight: "¡Correcto!", fcWrong: b => `No exactamente. Significa ${b}.`, fcEnd: (s, n) => `Terminado. Acertaste ${s} de ${n}.`,
+});
+Object.assign(X.en.labels, { hangman: "play hangman", rps: "play rock paper scissors", guess: "play a number guessing game", mathquiz: "give you a math quiz", twister: "say a tongue twister", wotd: "tell you the word of the day", flashcards: "run flashcards" });
+Object.assign(X.hi.labels, { hangman: "हैंगमैन खेल", rps: "पत्थर कागज़ कैंची खेल", guess: "संख्या का अंदाज़ा लगाने का खेल खेल", mathquiz: "गणित क्विज़ करा", twister: "जीभ मरोड़ वाली पंक्ति बोल", wotd: "आज का शब्द बता", flashcards: "फ्लैशकार्ड चला" });
+Object.assign(X.es.labels, { hangman: "jugar al ahorcado", rps: "jugar a piedra, papel o tijera", guess: "jugar a adivinar un número", mathquiz: "hacerte un quiz de matemáticas", twister: "decir un trabalenguas", wotd: "decirte la palabra del día", flashcards: "usar tarjetas de estudio" });
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -1181,6 +1230,166 @@ const country = {
   },
 };
 
+// ---------- Games and learning ----------
+const ri = n => Math.floor(Math.random() * n);
+const stripAccents = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// Hangman
+const HANG_WORDS = {
+  en: "planet garden rocket castle bridge pencil guitar window butter monkey jungle puzzle silver turtle wizard dragon pirate button candle island forest magnet pepper rabbit school spider thunder whistle balloon blanket".split(" "),
+  es: "gato perro casa libro playa queso tigre luna mesa cielo fuego nube flor isla bosque puente cohete castillo dragon zapato ventana jardin pelota arbol raton camino montana".split(" "),
+};
+const LETTER_NAMES = {
+  en: { ay: "a", be: "b", bee: "b", see: "c", sea: "c", dee: "d", gee: "g", jay: "j", kay: "k", oh: "o", pee: "p", queue: "q", cue: "q", are: "r", tea: "t", you: "u", why: "y", zee: "z", ex: "x", eye: "i" },
+  es: { be: "b", ce: "c", de: "d", efe: "f", ge: "g", hache: "h", jota: "j", ka: "k", ele: "l", eme: "m", ene: "n", pe: "p", cu: "q", erre: "r", ese: "s", te: "t", uve: "v", equis: "x", ye: "y", zeta: "z" },
+};
+const hangShow = (st, x) => st.word.split("").map(c => (st.guessed.includes(c) ? c : x.blank)).join(", ");
+const hangman = {
+  id: "hangman", test: { en: /\bhangman\b/, hi: /हैंगमैन|हैंग मैन/, es: /ahorcado/ },
+  run(t, lang, ctx) {
+    const x = X[lang], list = HANG_WORDS[lang];
+    if (!list) return { text: x.hmNoLang, tone: "no" };
+    const st = { id: "hangman", word: list[ri(list.length)], guessed: [], lives: 6 };
+    ctx.awaiting = st;
+    return { text: x.hmStart(hangShow(st, x), st.lives), tone: "yes" };
+  },
+};
+AWAIT.hangman = (t, lang, st) => {
+  const x = X[lang], tokens = stripAccents(t).split(" ").filter(Boolean);
+  let letter = null, whole = null;
+  if (tokens.length === 1 && tokens[0].length === 1) letter = tokens[0];
+  else if (tokens.length === 1 && (LETTER_NAMES[lang] || {})[tokens[0]]) letter = LETTER_NAMES[lang][tokens[0]];
+  else if (tokens.length === 2 && /^(?:letter|the|la|letra)$/.test(tokens[0]) && tokens[1].length === 1) letter = tokens[1];
+  else if (tokens.length === 1) whole = tokens[0];
+  if (!letter && !whole) { brain.awaiting = st; return { text: x.hmAsk, tone: "yes" }; }
+  const next = { ...st, guessed: [...st.guessed] };
+  if (whole) {
+    if (whole === st.word) return { text: x.hmWin(st.word), tone: "yes", laugh: true };
+    next.lives--;
+    if (next.lives <= 0) return { text: x.hmLose(st.word), tone: "no" };
+    brain.awaiting = next; return { text: x.hmMiss(hangShow(next, x), next.lives), tone: "no" };
+  }
+  if (st.guessed.includes(letter)) { brain.awaiting = st; return { text: x.hmTry(letter), tone: "yes" }; }
+  next.guessed.push(letter);
+  if (st.word.includes(letter)) {
+    if (st.word.split("").every(c => next.guessed.includes(c))) return { text: x.hmWin(st.word), tone: "yes", laugh: true };
+    brain.awaiting = next; return { text: x.hmHit(hangShow(next, x), next.lives), tone: "yes" };
+  }
+  next.lives--;
+  if (next.lives <= 0) return { text: x.hmLose(st.word), tone: "no" };
+  brain.awaiting = next; return { text: x.hmMiss(hangShow(next, x), next.lives), tone: "no" };
+};
+
+// Rock, paper, scissors (keeps score until you stop)
+const RPS_WORDS = { en: [/rock/, /paper/, /scissor/], hi: [/पत्थर|पत्थर/, /कागज़|कागज/, /कैंची|कैची/], es: [/piedra/, /papel/, /tijera/] };
+const rps = {
+  id: "rps", test: { en: /\brock,? paper,? scissors\b|\brps\b/, hi: /पत्थर,? कागज़?,? कैंची/, es: /piedra,? papel,? (?:o |y )?tijeras?/ },
+  run(t, lang, ctx) { ctx.awaiting = { id: "rps", you: 0, me: 0 }; return { text: X[lang].rpsStart, tone: "yes" }; },
+};
+AWAIT.rps = (t, lang, st) => {
+  const x = X[lang], mine = RPS_WORDS[lang].findIndex(re => re.test(t));
+  if (mine < 0) { brain.awaiting = st; return { text: x.rpsAsk, tone: "yes" }; }
+  const robot = ri(3), result = (mine - robot + 3) % 3 === 0 ? 0 : (mine - robot + 3) % 3 === 1 ? 1 : -1;
+  const next = { ...st, you: st.you + (result === 1 ? 1 : 0), me: st.me + (result === -1 ? 1 : 0) };
+  brain.awaiting = next;
+  return { text: x.rpsOut(x.rpsNames[mine], x.rpsNames[robot], result, next.you, next.me), tone: "yes" };
+};
+
+// Number guessing
+const guessGame = {
+  id: "guess", test: { en: /\bguess(?:ing)? (?:the |a )?number\b|\bnumber guessing\b/, hi: /संख्या का अंदाज़ा|नंबर का अंदाज़ा|नंबर गेस/, es: /adivina(?:r)? (?:el |un )?número|adivinar un numero/ },
+  run(t, lang, ctx) { ctx.awaiting = { id: "guess", secret: 1 + ri(100), tries: 0 }; return { text: X[lang].gsStart, tone: "yes" }; },
+};
+AWAIT.guess = (t, lang, st) => {
+  const x = X[lang], m = t.match(/\d+/);
+  if (!m) { brain.awaiting = st; return { text: x.gsAsk, tone: "yes" }; }
+  const n = +m[0], tries = st.tries + 1;
+  if (n === st.secret) return { text: x.gsWin(tries), tone: "yes", laugh: true };
+  brain.awaiting = { ...st, tries };
+  return { text: n < st.secret ? x.gsHigher : x.gsLower, tone: "yes" };
+};
+
+// Math quiz (5 questions)
+function mathQuestion() {
+  const op = ri(3);
+  if (op === 0) { const a = 2 + ri(49), b = 2 + ri(49); return { a, b, op, ans: a + b }; }
+  if (op === 1) { const a = 10 + ri(51), b = 2 + ri(a - 2); return { a, b, op, ans: a - b }; }
+  const a = 2 + ri(11), b = 2 + ri(11); return { a, b, op, ans: a * b };
+}
+const askMath = (n, q, x) => x.mqQ(n, q.a, x.mqOps[q.op], q.b);
+const mathQuiz = {
+  id: "mathquiz", test: { en: /\bmath (?:quiz|test|game|practice|problems?)\b|\bquiz me on math\b/, hi: /गणित क्विज़|गणित का क्विज़|गणित क्विज|गणित का खेल/, es: /quiz de matem[aá]ticas|prueba de matem[aá]ticas|juego de matem[aá]ticas/ },
+  run(t, lang, ctx) {
+    const q = mathQuestion(); ctx.awaiting = { id: "mathquiz", n: 1, score: 0, q };
+    return { text: `${X[lang].mqStart} ${askMath(1, q, X[lang])}`, tone: "yes" };
+  },
+};
+AWAIT.mathquiz = (t, lang, st) => {
+  const x = X[lang], m = t.match(/-?\d+/);
+  if (!m) { brain.awaiting = st; return { text: x.mqAsk, tone: "yes" }; }
+  const right = +m[0] === st.q.ans, score = st.score + (right ? 1 : 0), verdict = right ? x.mqRight : x.mqWrong(st.q.ans);
+  if (st.n >= 5) return { text: `${verdict} ${x.mqEnd(score)}`, tone: "yes", laugh: score >= 4 };
+  const q = mathQuestion(); brain.awaiting = { id: "mathquiz", n: st.n + 1, score, q };
+  return { text: `${verdict} ${askMath(st.n + 1, q, x)}`, tone: right ? "yes" : "no" };
+};
+
+// Tongue twisters
+const twister = {
+  id: "twister", test: { en: /\btongue twisters?\b/, hi: /टंग ट्विस्टर|जीभ मरोड़|ज़ुबान तोड़|जुबान तोड़/, es: /trabalenguas/ },
+  run: (t, lang) => ({ text: pick(X[lang].twisters), tone: "yes" }),
+};
+
+// Word of the day (Wiktionary, via /api/wotd), defined with the same lookup as "define"
+const wotd = {
+  id: "wotd", test: { en: /\bword of the day\b/, hi: /आज का शब्द/, es: /palabra del d[ií]a/ },
+  async run(t, lang) {
+    const x = X[lang], wl = "en"; // only the English Wiktionary publishes a word of the day
+    try {
+      const w = (await getJSON("/api/wotd")).word;
+      if (!w) throw new Error("no word");
+      const j = await getJSON(`https://${wl}.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(w)}?origin=*`);
+      const e = (j[wl] || Object.values(j)[0] || [])[0], d = e && e.definitions && e.definitions[0] && stripHtml(e.definitions[0].definition);
+      const body = d ? x.defOut(w, (e.partOfSpeech || "").toLowerCase(), firstSentences(d, 2)) : w;
+      const text = `${x.wotdIntro} ${body}`;
+      return lang !== "en" ? { text, tone: "yes", segments: [{ text: x.wotdIntro, lang }, { text: body, lang: "en" }] } : { text, tone: "yes" };
+    } catch { return { text: x.wotdFail, tone: "no" }; }
+  },
+};
+
+// Flashcards (saved in your memory, so they follow your account once signed in)
+const FC = {
+  add: { en: /flash ?cards? (.+?) (?:means|is|equals|as) (.+)/, hi: /(?:फ्लैशकार्ड|फ्लैश कार्ड)(?: जोड़ो)? (.+?) (?:का मतलब|मतलब) (.+)/, es: /(?:tarjeta|tarjetas de estudio) (.+?) (?:significa|es|quiere decir) (.+)/ },
+  quiz: { en: /\b(?:quiz|test) me\b|\bpractice (?:my )?(?:flash ?cards|vocabulary)\b/, hi: /मुझसे पूछो|मेरी परीक्षा|क्विज़ करो/, es: /pregúntame|preguntame|ponme a prueba|practica/ },
+  clear: { en: /\b(?:clear|delete|erase) (?:all )?(?:my )?flash ?cards\b/, hi: /फ्लैशकार्ड (?:मिटाओ|हटाओ|साफ़)/, es: /(?:borra|elimina) (?:todas )?mis tarjetas/ },
+};
+const flashcards = {
+  id: "flashcards",
+  test: { en: /\bflash ?cards?\b|\b(?:vocabulary|vocab) (?:quiz|cards?)\b/, hi: /फ्लैशकार्ड|फ्लैश कार्ड/, es: /tarjetas de estudio|mis tarjetas|\btarjeta\b/ },
+  run(t, lang, ctx) {
+    const x = X[lang], m = memory(), cards = m.cards || [];
+    if (FC.clear[lang].test(t)) { m.cards = []; saveMemory(m); return { text: x.fcCleared, tone: "yes" }; }
+    const add = t.match(FC.add[lang]);
+    if (add) { m.cards = [...cards, { f: add[1].trim(), b: add[2].trim() }]; saveMemory(m); return { text: x.fcAdded(add[1].trim(), add[2].trim()), tone: "yes" }; }
+    if (!cards.length) return { text: /add|जोड़ो|añade|agrega/.test(t) ? x.fcNeed : x.fcNone, tone: /add|जोड़ो|añade|agrega/.test(t) ? "yes" : "no" };
+    if (FC.quiz[lang].test(t)) {
+      const order = cards.map((c, i) => i).sort(() => Math.random() - 0.5).slice(0, 5);
+      ctx.awaiting = { id: "cards", order, at: 0, score: 0 };
+      return { text: x.fcAsk(1, cards[order[0]].f), tone: "yes" };
+    }
+    return { text: x.fcList(cards.length, cards.slice(0, 5).map(c => x.fcItem(c.f, c.b)).join("; ")), tone: "yes" };
+  },
+};
+AWAIT.cards = (t, lang, st) => {
+  const x = X[lang], cards = memory().cards || [], card = cards[st.order[st.at]];
+  if (!card) return { text: x.fcNone, tone: "no" };
+  const right = stripAccents(t).includes(stripAccents(card.b.toLowerCase())) || stripAccents(card.b.toLowerCase()).includes(stripAccents(t));
+  const score = st.score + (right ? 1 : 0), verdict = right ? x.fcRight : x.fcWrong(card.b);
+  if (st.at + 1 >= st.order.length) return { text: `${verdict} ${x.fcEnd(score, st.order.length)}`, tone: "yes" };
+  const nextCard = cards[st.order[st.at + 1]];
+  brain.awaiting = { ...st, at: st.at + 1, score };
+  return { text: `${verdict} ${x.fcAsk(st.at + 2, nextCard.f)}`, tone: right ? "yes" : "no" };
+};
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -1195,7 +1404,7 @@ INTENTS.find(i => i.id === "weather").test.en = /\b(weather|forecast|temperature
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(history, quake, iss, holidays, country, briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(hangman, rps, guessGame, mathQuiz, twister, wotd, flashcards, history, quake, iss, holidays, country, briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once
