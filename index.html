@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Can-Do Robot</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#3b6cf6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
   :root {
     --bg: #f4f5f7; --card: #ffffff; --ink: #1b1f27; --muted: #6a7280;
@@ -133,6 +139,10 @@
       <input type="checkbox" id="speakReplies" style="justify-self:start">
       <label for="autoListen">Always listening</label>
       <input type="checkbox" id="autoListen" style="justify-self:start">
+      <label for="notify">Notifications</label>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" id="notify"> when a reminder rings and this tab is hidden</label>
+      <label>Install</label>
+      <div><button type="button" class="ghost" id="installBtn" hidden>Install as an app</button><span class="hint" id="installHint">Use your browser's “Install” or “Add to Home Screen”.</span></div>
       <label for="voice">Voice</label>
       <select id="voice"></select>
       <label for="rate">Speed</label>
@@ -495,7 +505,7 @@ async function answer(raw, lang, wakeId) {
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "" };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "", notify: false };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } window.cloudSave && window.cloudSave(); };
@@ -593,6 +603,14 @@ function speak(what, onDone) {
   guard = setTimeout(() => { speechSynthesis.cancel(); finish(); }, 3000);
 }
 
+// A system notification, only when you enabled it and the page isn't in front. (A fully closed app can't ring: that would need a push server.)
+function notify(text) {
+  if (!cfg.notify || !document.hidden || !("Notification" in window) || Notification.permission !== "granted") return;
+  const opts = { body: text, icon: "/icon-192.png", tag: "can-do-robot" };
+  if (navigator.serviceWorker) navigator.serviceWorker.ready.then(r => r.showNotification("Can-Do Robot", opts)).catch(() => new Notification("Can-Do Robot", opts));
+  else new Notification("Can-Do Robot", opts);
+}
+
 function beep() {
   if (!cfg.speakReplies) return; // muted
   try {
@@ -639,7 +657,7 @@ function laugh(n = 5) {
 }
 
 // ---- Timer ----
-startTimer = (seconds, text, onFire, quiet) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); if (!quiet) beep(); speak(m); onFire && onFire(); }, seconds * 1000);
+startTimer = (seconds, text, onFire, quiet) => setTimeout(() => { const m = text || tr().timerDone; addMsg(m, "bot yes"); if (!quiet) { beep(); notify(m); } speak(m); onFire && onFire(); }, seconds * 1000);
 
 // ---- Listening: wake mode (needs the wake word) vs command mode (next phrase is the command) ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -824,6 +842,20 @@ $("lang").onchange = e => {
   if (listening) spawn();
 };
 $("autoListen").checked = cfg.autoListen;
+$("notify").checked = cfg.notify && "Notification" in window && Notification.permission === "granted";
+$("notify").onchange = async e => {
+  if (!e.target.checked) { cfg.notify = false; save(); return; }
+  if (!("Notification" in window)) { e.target.checked = false; statusEl.textContent = "This browser doesn't support notifications."; return; }
+  const p = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+  cfg.notify = p === "granted"; e.target.checked = cfg.notify; save();
+  if (!cfg.notify) statusEl.textContent = "Notifications are blocked. Allow them in the browser's site settings.";
+};
+// Install as an app: Chrome offers a prompt we can trigger from a button; elsewhere the hint explains the menu.
+let installEvent = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvent = e; $("installBtn").hidden = false; $("installHint").hidden = true; });
+window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHint").hidden = false; $("installHint").textContent = "Installed."; });
+$("installBtn").onclick = async () => { if (!installEvent) return; installEvent.prompt(); await installEvent.userChoice; installEvent = null; $("installBtn").hidden = true; };
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("/sw.js").catch(() => { /* works fine without it */ });
 $("autoListen").onchange = e => { cfg.autoListen = e.target.checked; save(); if (cfg.autoListen) autoStart(); };
 $("speakReplies").checked = cfg.speakReplies;
 // Mute button: silences the robot's voice, laugh and beeps at once (it still listens and answers on screen).

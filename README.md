@@ -69,6 +69,11 @@ If you set up Supabase before this feature existed, run this once in the SQL Edi
 alter table public.user_data add column if not exists memory jsonb not null default '{}'::jsonb;
 ```
 
+## Phone app
+It's installable: in Chrome (desktop or Android) use the install icon in the address bar or **Settings > Install as an app**; on iPhone use Share > Add to Home Screen. The app shell is saved so it opens even offline (voice, weather and the other online abilities still need internet), and updates arrive on the next open.
+
+**Notifications** (Settings > Notifications): when a timer or reminder rings while the app is open but hidden behind other tabs or windows, you get a system notification. A completely closed app can't ring, because that would need a push server.
+
 ## Admins
 Admins get a **🛡 Admin** button that lists every user with their sign-in method and last sign-in, and lets them **Block** (stops a person signing in, reversible) or **Delete** an account (permanent, removes their saved notes). Admins can't change themselves or each other.
 
