@@ -18,6 +18,8 @@ Ask "what can you do?" for the list, or "can you…?" about anything. Unknown qu
 
 ## Settings (saved in your browser)
 - **Wake word:** Computer, Cool Computer or Hey Robot. The robot's name follows it.
+- **Custom wake word:** choose "Custom…" and type your own phrase (any language you speak).
+- **Fix mishearing:** if the browser keeps writing the wrong word (say "commuter" for "computer"), add a fix: whenever it hears the first, treat it as the second. Recently heard phrases are listed to tap and copy.
 - **Language:** English, Hindi or Spanish (listening, speaking and answers).
 - **Always listening:** on by default. It starts listening as soon as the page opens (the browser may ask for the microphone once, or need one click).
 - **Voice, speed and pitch.**

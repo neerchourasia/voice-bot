@@ -119,7 +119,10 @@
         <option value="computer">Computer</option>
         <option value="cool">Cool Computer</option>
         <option value="robot">Hey Robot</option>
+        <option value="custom">Custom…</option>
       </select>
+      <label for="customWake" id="customWakeLabel" hidden>Your wake word</label>
+      <input id="customWake" maxlength="30" placeholder="e.g. hey jarvis" hidden>
       <label for="lang">Language</label>
       <select id="lang">
         <option value="en">English</option>
@@ -137,6 +140,16 @@
       <label for="pitch">Pitch</label>
       <input type="range" id="pitch" min="0.5" max="1.8" step="0.05">
       <div class="full row"><button type="button" class="ghost" id="testVoice">Test voice</button></div>
+
+      <h3 class="full">Fix mishearing</h3>
+      <p class="hint full">If it keeps writing the wrong word, teach it: whenever it hears the first, treat it as the second. Tap a recent phrase to copy it in.</p>
+      <div class="full" id="heardChips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div class="full" id="fixList" style="display:grid;gap:8px"></div>
+      <div class="full addform">
+        <input id="fixFrom" placeholder="It hears… e.g. commuter">
+        <input id="fixTo" placeholder="Treat it as… e.g. computer">
+        <button type="button" class="ghost" id="fixAdd">Add fix</button>
+      </div>
 
       <h3 class="full">Custom abilities</h3>
       <p class="hint full">Teach the robot your own “can you…?” answers. It matches any of the keywords you list.</p>
@@ -482,7 +495,7 @@ async function answer(raw, lang, wakeId) {
 const $ = id => document.getElementById(id);
 const app = $("app"), logEl = $("log"), statusEl = $("status");
 
-const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [] };
+const DEFAULTS = { wake: "computer", lang: "en", voice: "", rate: 1, pitch: 1, speakReplies: true, autoListen: true, volume: 1, abilities: [], fixes: [], customWake: "" };
 let cfg = { ...DEFAULTS };
 try { cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("voicebot-cfg") || "{}") }; } catch { /* storage blocked */ }
 const save = () => { try { localStorage.setItem("voicebot-cfg", JSON.stringify(cfg)); } catch { /* ignore */ } window.cloudSave && window.cloudSave(); };
@@ -490,7 +503,32 @@ const syncAbilities = () => { brain.abilities = cfg.abilities.map(a => ({ ...a, 
 syncAbilities();
 
 const tr = () => T[cfg.lang];
+// A wake word you type yourself, listened for in every language.
+function refreshCustomWake() {
+  const phrase = norm(cfg.customWake || "");
+  WAKE.custom = { name: cfg.customWake.trim() || "Custom", en: phrase ? [phrase] : [], hi: phrase ? [phrase] : [], es: phrase ? [phrase] : [] };
+}
+refreshCustomWake();
+if (!WAKE[cfg.wake]) cfg.wake = "computer"; // a saved wake word that no longer exists
 const wakeName = () => WAKE[cfg.wake].name;
+
+// Corrections for words the recogniser keeps getting wrong ("commuter" -> "computer").
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function applyFixes(text) {
+  let t = text;
+  for (const f of cfg.fixes || []) {
+    if (!f.from) continue;
+    t = t.replace(new RegExp(`(^|[^\\p{L}\\p{M}])${escapeRe(f.from)}(?![\\p{L}\\p{M}])`, "giu"), (m, pre) => pre + f.to);
+  }
+  return t;
+}
+const heardLog = []; // what the browser recently heard, to make fixes easy
+function pushHeard(text) {
+  const t = text.trim(); if (!t) return;
+  const i = heardLog.indexOf(t); if (i >= 0) heardLog.splice(i, 1);
+  heardLog.unshift(t); heardLog.length = Math.min(heardLog.length, 6);
+  if (typeof renderHeard === "function") renderHeard();
+}
 
 // ---- Visual state ----
 function setVisual(...cls) {
@@ -655,6 +693,7 @@ function stopSpeaking() {
 }
 
 function onHeard(text) {
+  pushHeard(text); text = applyFixes(text);
   if (speaking) { // while it talks, only a bare "stop" counts, so it can't be set off by hearing itself
     if (isStopPhrase(text, cfg.lang, cfg.wake)) stopSpeaking();
     return;
@@ -749,7 +788,37 @@ $("aAdd").onclick = () => {
 };
 
 $("wake").value = cfg.wake; $("lang").value = cfg.lang; $("rate").value = cfg.rate; $("pitch").value = cfg.pitch;
-$("wake").onchange = e => { cfg.wake = e.target.value; save(); renderHeader(); };
+function renderWakeInputs() {
+  const custom = cfg.wake === "custom";
+  $("customWake").hidden = !custom; $("customWakeLabel").hidden = !custom;
+  $("customWake").value = cfg.customWake || "";
+}
+$("wake").onchange = e => { cfg.wake = e.target.value; save(); renderWakeInputs(); renderHeader(); };
+$("customWake").oninput = e => { cfg.customWake = e.target.value; refreshCustomWake(); save(); renderHeader(); };
+renderWakeInputs();
+
+// Fix mishearing: list, add, remove, and recent phrases
+function renderFixes() {
+  const box = $("fixList"); box.innerHTML = "";
+  (cfg.fixes || []).forEach((f, i) => {
+    const d = document.createElement("div"); d.className = "abil";
+    const info = document.createElement("div"); info.textContent = `“${f.from}” → “${f.to}”`;
+    const x = document.createElement("button"); x.textContent = "×"; x.title = "Remove";
+    x.onclick = () => { cfg.fixes.splice(i, 1); save(); renderFixes(); };
+    d.append(info, x); box.appendChild(d);
+  });
+}
+function renderHeard() {
+  const box = $("heardChips"); if (!box) return; box.innerHTML = "";
+  heardLog.forEach(t => { const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = t.length > 28 ? t.slice(0, 28) + "…" : t; b.onclick = () => { $("fixFrom").value = t.split(" ").slice(0, 3).join(" "); $("fixTo").focus(); }; box.appendChild(b); });
+}
+$("fixAdd").onclick = () => {
+  const from = $("fixFrom").value.trim().toLowerCase(), to = $("fixTo").value.trim().toLowerCase();
+  if (!from || !to || from === to) return;
+  cfg.fixes = (cfg.fixes || []).filter(f => f.from !== from); cfg.fixes.push({ from, to });
+  $("fixFrom").value = ""; $("fixTo").value = ""; save(); renderFixes();
+};
+renderFixes(); renderHeard();
 $("lang").onchange = e => {
   cfg.lang = e.target.value; cfg.voice = ""; save(); loadVoices(); renderChips(); renderHeader();
   if (listening) spawn();

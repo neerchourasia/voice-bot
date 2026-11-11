@@ -4,7 +4,7 @@
   const A = window.APP_CONFIG || {};
   const configured = Boolean(A.SUPABASE_URL && A.SUPABASE_ANON_KEY);
   const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js";
-  const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "volume", "speakReplies", "autoListen", "abilities"]; // not "voice": voices differ per device
+  const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "volume", "speakReplies", "autoListen", "abilities", "fixes", "customWake"]; // not "voice": voices differ per device
   const LOCAL = { notes: "voicebot-notes", todo: "voicebot-todo", reminders: "voicebot-reminders", memory: "voicebot-memory" };
 
   let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in", providers = true, memoryColumn = true, warnedMemory = false; // providers: any Google/GitHub button available
@@ -73,6 +73,7 @@
     save();
     $("wake").value = cfg.wake; $("lang").value = cfg.lang; $("rate").value = cfg.rate; $("pitch").value = cfg.pitch;
     $("autoListen").checked = cfg.autoListen; renderMute();
+    refreshCustomWake(); if (!WAKE[cfg.wake]) cfg.wake = "computer"; $("wake").value = cfg.wake; renderWakeInputs(); renderFixes();
     syncAbilities(); renderAbilities(); loadVoices(); renderChips(); renderHeader();
     if (cfg.lang !== lang && listening) spawn();
   }
