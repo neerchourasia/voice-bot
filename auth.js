@@ -209,6 +209,7 @@
     session = s; user = s ? s.user : null;
     renderBar();
     brain.user = displayName() || null;
+    window.dispatchEvent(new Event("auth-changed")); // lets admin.js check whether this person is an admin
     if (event === "PASSWORD_RECOVERY") { setMode("recover"); showOverlay(true); return; }
     if (user) {
       if (mode !== "recover") showOverlay(false);

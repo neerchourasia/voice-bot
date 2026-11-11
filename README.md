@@ -58,6 +58,20 @@ Notes on how it behaves:
 - Reminders ring only while a tab is open. One that came due while no tab was open is shown as "Missed while you were away" the next time it loads.
 - Free Supabase projects pause after a week without activity, so the first login afterwards can be slow or fail until you resume the project.
 
+## Admins
+Admins get a **🛡 Admin** button that lists every user with their sign-in method and last sign-in, and lets them **Block** (stops a person signing in, reversible) or **Delete** an account (permanent, removes their saved notes). Admins can't change themselves or each other.
+
+Admin rights are decided on the server (`api/admin.js`), matched against the sign-in email, so editing the page in the browser can't grant them. Add these in Vercel under **Settings > Environment Variables**, then redeploy:
+
+| Variable | Value |
+|---|---|
+| `SUPABASE_URL` | `https://<your-project>.supabase.co` |
+| `SUPABASE_ANON_KEY` | the public `sb_publishable_…` key |
+| `ADMIN_EMAILS` | comma-separated admin emails, e.g. `me@gmail.com,other@gmail.com` |
+| `SUPABASE_SERVICE_ROLE_KEY` | the **secret** key (Supabase > Project Settings > API Keys > Secret keys). Never put this in `config.js` or the repo. |
+
+Because "Confirm email" is off, only list emails you control as admins: a new sign-up can't take over an email that already has an account, but an address nobody has registered yet could be claimed by anyone.
+
 ## Notes
 - Web answers are short abstracts, not full search results.
 - Opening a website from voice can be blocked by the browser's popup blocker; the reply then shows an "Open" link to tap.
