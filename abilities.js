@@ -181,6 +181,43 @@ Object.assign(X.en.labels, { briefing: "give you a morning briefing", homecity: 
 Object.assign(X.hi.labels, { briefing: "सुबह का ब्रीफ़िंग दे", homecity: "आपका घर का शहर याद रख", pomodoro: "फ़ोकस टाइमर चला", ambient: "बारिश या समुद्र की आवाज़ चला", breathing: "साँस का अभ्यास करा" });
 Object.assign(X.es.labels, { briefing: "darte un resumen de la mañana", homecity: "recordar tu ciudad", pomodoro: "usar un temporizador de enfoque", ambient: "poner sonido de lluvia, mar o ruido blanco", breathing: "guiar un ejercicio de respiración" });
 
+Object.assign(X.en, {
+  histIntro: d => `On this day, ${d}:`, histEvent: (y, t) => `In ${y}, ${t}`, histFail: "I couldn't look up this day in history.",
+  quakeOut: (n, list) => `${n} ${plural(n, "earthquake", "earthquakes")} of magnitude 4.5 or more in the last day. Biggest: ${list}.`, quakeNone: "No earthquakes of magnitude 4.5 or more in the last day.", quakeFail: "I couldn't get earthquake data right now.",
+  quakeItem: (m, p) => `magnitude ${m} ${p}`,
+  issOut: (where, km, alt) => `The International Space Station is over ${where} right now, moving at about ${km} kilometres per hour, ${alt} kilometres up.`, issFail: "I couldn't find the space station right now.",
+  issOcean: (lat, lon) => `open water near ${Math.abs(lat)} degrees ${lat >= 0 ? "north" : "south"}, ${Math.abs(lon)} degrees ${lon >= 0 ? "east" : "west"}`,
+  holOut: (c, list) => `Next public holidays in ${c}: ${list}.`, holNone: c => `I don't have public holiday data for ${c}. Try a country like the United States, Spain or Germany.`, holFail: "I couldn't get holiday data right now.",
+  holItem: (n, d) => `${n} on ${d}`,
+  ctyOut: (n, cap, region, pop, income) => `${n}: the capital is ${cap || "unknown"}, in ${region}. ${pop ? " Population about " + pop + "." : ""}${income ? " Income level: " + income + "." : ""}`, ctyFail: "I couldn't look up that country right now.",
+  millions: n => `${n} million`, billions: n => `${n} billion`, thousands: n => `${n} thousand`,
+});
+Object.assign(X.hi, {
+  histIntro: d => `आज के दिन, ${d}:`, histEvent: (y, t) => `${y} में, ${t}`, histFail: "आज के दिन का इतिहास नहीं मिल पाया।",
+  quakeOut: (n, list) => `पिछले एक दिन में 4.5 या उससे ज़्यादा तीव्रता के ${n} भूकंप आए। सबसे बड़ा: ${list}।`, quakeNone: "पिछले एक दिन में 4.5 या उससे ज़्यादा तीव्रता का कोई भूकंप नहीं आया।", quakeFail: "अभी भूकंप की जानकारी नहीं मिल पाई।",
+  quakeItem: (m, p) => `तीव्रता ${m}, ${p}`,
+  issOut: (where, km, alt) => `अंतर्राष्ट्रीय अंतरिक्ष स्टेशन अभी ${where} के ऊपर है, लगभग ${km} किलोमीटर प्रति घंटे की रफ़्तार से, ${alt} किलोमीटर की ऊँचाई पर।`, issFail: "अभी अंतरिक्ष स्टेशन नहीं मिल पाया।",
+  issOcean: (lat, lon) => `खुले समुद्र में ${Math.abs(lat)} अंश ${lat >= 0 ? "उत्तर" : "दक्षिण"}, ${Math.abs(lon)} अंश ${lon >= 0 ? "पूर्व" : "पश्चिम"} के पास`,
+  holOut: (c, list) => `${c} की अगली सार्वजनिक छुट्टियाँ: ${list}।`, holNone: c => `${c} की सार्वजनिक छुट्टियों की जानकारी मेरे पास नहीं है। अमेरिका, स्पेन या जर्मनी जैसा कोई देश आज़माइए।`, holFail: "अभी छुट्टियों की जानकारी नहीं मिल पाई।",
+  holItem: (n, d) => `${d} को ${n}`,
+  ctyOut: (n, cap, region, pop, income) => `${n}: राजधानी ${cap || "अज्ञात"} है, क्षेत्र ${region}। ${pop ? " आबादी लगभग " + pop + "।" : ""}${income ? " आय स्तर: " + income + "।" : ""}`, ctyFail: "अभी उस देश की जानकारी नहीं मिल पाई।",
+  millions: n => `${n} मिलियन`, billions: n => `${n} अरब`, thousands: n => `${n} हज़ार`,
+});
+Object.assign(X.es, {
+  histIntro: d => `Un día como hoy, ${d}:`, histEvent: (y, t) => `En ${y}, ${t}`, histFail: "No pude buscar este día en la historia.",
+  quakeOut: (n, list) => `${n} ${plural(n, "terremoto", "terremotos")} de magnitud 4,5 o más en el último día. El mayor: ${list}.`, quakeNone: "Ningún terremoto de magnitud 4,5 o más en el último día.", quakeFail: "No pude obtener datos de terremotos ahora.",
+  quakeItem: (m, p) => `magnitud ${m} ${p}`,
+  issOut: (where, km, alt) => `La Estación Espacial Internacional está sobre ${where} ahora mismo, a unos ${km} kilómetros por hora y ${alt} kilómetros de altura.`, issFail: "No pude encontrar la estación espacial ahora.",
+  issOcean: (lat, lon) => `aguas abiertas cerca de ${Math.abs(lat)} grados ${lat >= 0 ? "norte" : "sur"}, ${Math.abs(lon)} grados ${lon >= 0 ? "este" : "oeste"}`,
+  holOut: (c, list) => `Próximos festivos en ${c}: ${list}.`, holNone: c => `No tengo datos de festivos de ${c}. Prueba con un país como Estados Unidos, España o Alemania.`, holFail: "No pude obtener los festivos ahora.",
+  holItem: (n, d) => `${n} el ${d}`,
+  ctyOut: (n, cap, region, pop, income) => `${n}: la capital es ${cap || "desconocida"}, en ${region}. ${pop ? " Población de unos " + pop + "." : ""}${income ? " Nivel de ingresos: " + income + "." : ""}`, ctyFail: "No pude buscar ese país ahora.",
+  millions: n => `${n} millones`, billions: n => `${n} mil millones`, thousands: n => `${n} mil`,
+});
+Object.assign(X.en.labels, { history: "tell you what happened on this day in history", quake: "tell you about recent earthquakes", iss: "tell you where the space station is", holidays: "tell you the next public holidays", country: "give you the capital and population of a country" });
+Object.assign(X.hi.labels, { history: "इतिहास में आज के दिन की घटनाएँ बता", quake: "हाल के भूकंपों की जानकारी दे", iss: "अंतरिक्ष स्टेशन कहाँ है बता", holidays: "अगली सार्वजनिक छुट्टियाँ बता", country: "किसी देश की राजधानी और आबादी बता" });
+Object.assign(X.es.labels, { history: "contarte qué pasó un día como hoy", quake: "informarte de terremotos recientes", iss: "decirte dónde está la estación espacial", holidays: "decirte los próximos festivos", country: "darte la capital y la población de un país" });
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -999,6 +1036,151 @@ const breathing = {
   },
 };
 
+// ---------- More lookups: this day in history, earthquakes, space station, public holidays, countries ----------
+const WIKI_FEED = { en: "en", es: "es" }; // Wikipedia has "on this day" in these; Hindi falls back to English and is translated
+
+async function historyFor(t, lang) {
+  const x = X[lang], now = new Date();
+  let m = monthOf(t), d = (t.match(/\b(\d{1,2})\b/) || [])[1];
+  if (!m || !d) { m = now.getMonth() + 1; d = now.getDate(); }
+  const wl = WIKI_FEED[lang] || "en";
+  try {
+    const j = await getJSON(`https://${wl}.wikipedia.org/api/rest_v1/feed/onthisday/events/${pad(m)}/${pad(+d)}`);
+    const events = (j.events || []).filter(e => e.year !== undefined && e.text);
+    if (!events.length) throw new Error("none");
+    const picks = [], used = new Set();
+    while (picks.length < Math.min(3, events.length)) { const i = Math.floor(Math.random() * events.length); if (!used.has(i)) { used.add(i); picks.push(events[i]); } }
+    picks.sort((a, b) => a.year - b.year);
+    let items = picks.map(e => x.histEvent(e.year, e.text.replace(/\.$/, "")));
+    if (lang === "hi") items = await Promise.all(items.map(s => tx(s, "hi")));
+    const label = new Date(2000, m - 1, +d).toLocaleDateString(SPEECH[lang], { month: "long", day: "numeric" });
+    return { text: `${x.histIntro(label)} ${items.join(". ")}.`, tone: "yes" };
+  } catch { return { text: x.histFail, tone: "no" }; }
+}
+const history = {
+  id: "history",
+  test: {
+    en: /\bon this day\b|\bthis day in history\b|\bwhat happened (?:on|today)\b|\btoday in history\b/,
+    hi: /इतिहास में आज|आज के दिन का इतिहास|आज के दिन क्या हुआ/, es: /un día como hoy|un dia como hoy|qué pasó hoy|que paso hoy|hoy en la historia/,
+  },
+  run: (t, lang) => historyFor(t, lang),
+};
+
+const quake = {
+  id: "quake",
+  test: { en: /\b(?:earthquakes?|quakes?|tremors?)\b/, hi: /भूकंप|भूकम्प/, es: /terremoto|sismo|temblor/ },
+  async run(t, lang) {
+    const x = X[lang];
+    try {
+      const j = await getJSON("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson");
+      const f = (j.features || []).slice().sort((a, b) => b.properties.mag - a.properties.mag);
+      if (!f.length) return { text: x.quakeNone, tone: "yes" };
+      const top = f.slice(0, 3).map(q => x.quakeItem(q.properties.mag.toFixed(1), q.properties.place || "").trim());
+      return { text: x.quakeOut(f.length, top.join("; ")), tone: "yes" };
+    } catch { return { text: x.quakeFail, tone: "no" }; }
+  },
+};
+
+const iss = {
+  id: "iss",
+  test: { en: /\b(?:iss|space station)\b/, hi: /अंतरिक्ष स्टेशन|आईएसएस/, es: /estación espacial|estacion espacial|\biss\b/ },
+  async run(t, lang) {
+    const x = X[lang];
+    try {
+      const s = await getJSON("https://api.wheretheiss.at/v1/satellites/25544");
+      const lat = Math.round(s.latitude), lon = Math.round(s.longitude);
+      let where = x.issOcean(lat, lon);
+      try {
+        const g = await getJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${s.latitude}&longitude=${s.longitude}&localityLanguage=${lang}`);
+        const place = [g.locality || g.city, g.countryName].filter(Boolean).join(", ");
+        if (place) where = place;
+      } catch { /* keep the coordinates */ }
+      return { text: x.issOut(where, Math.round(s.velocity / 100) * 100, Math.round(s.altitude)), tone: "yes" };
+    } catch { return { text: x.issFail, tone: "no" }; }
+  },
+};
+
+// Country list from the World Bank (keyless, browser-friendly), fetched once per visit.
+let countryList = null;
+async function countries() {
+  if (countryList) return countryList;
+  const j = await getJSON("https://api.worldbank.org/v2/country?format=json&per_page=400");
+  countryList = (j[1] || []).filter(c => c.region && c.region.value !== "Aggregates");
+  return countryList;
+}
+const COUNTRY_ALIASES = {
+  usa: "united states", america: "united states", "the us": "united states", us: "united states", uk: "united kingdom", britain: "united kingdom", england: "united kingdom",
+  russia: "russian federation", "south korea": "korea, rep.", "north korea": "korea, dem. people's rep.", iran: "iran, islamic rep.", egypt: "egypt, arab rep.",
+  turkey: "turkiye", syria: "syrian arab republic", venezuela: "venezuela, rb", vietnam: "viet nam", laos: "lao pdr", uae: "united arab emirates", czechia: "czechia",
+  "ivory coast": "cote d'ivoire", gambia: "gambia, the", bahamas: "bahamas, the", yemen: "yemen, rep.", "hong kong": "hong kong sar, china", congo: "congo, dem. rep.",
+};
+async function findCountry(name, lang) {
+  let n = name.toLowerCase().replace(/^the\s+/, "").trim();
+  if (lang !== "en" && !/^[\x00-\x7F]+$/.test(n)) n = (await tx(n, "en", lang)).toLowerCase(); // Hindi names to English
+  else if (lang === "es") n = (await tx(n, "en", "es")).toLowerCase();
+  n = COUNTRY_ALIASES[n] || n;
+  const list = await countries();
+  return list.find(c => c.name.toLowerCase() === n) || list.find(c => c.name.toLowerCase().startsWith(n)) || list.find(c => c.name.toLowerCase().includes(n)) || null;
+}
+const COUNTRY_NAMES = {
+  "Korea, Rep.": "South Korea", "Korea, Dem. People's Rep.": "North Korea", "Iran, Islamic Rep.": "Iran", "Egypt, Arab Rep.": "Egypt", "Russian Federation": "Russia", Turkiye: "Turkey",
+  "Venezuela, RB": "Venezuela", "Yemen, Rep.": "Yemen", "Syrian Arab Republic": "Syria", "Viet Nam": "Vietnam", "Lao PDR": "Laos", "Congo, Dem. Rep.": "Democratic Republic of the Congo",
+  "Congo, Rep.": "Republic of the Congo", "Gambia, The": "Gambia", "Bahamas, The": "Bahamas", "Hong Kong SAR, China": "Hong Kong",
+};
+const niceCountry = n => COUNTRY_NAMES[n] || n.replace(/,.*$/, "");
+const dateOf = (s, lang) => new Date(s + "T12:00:00").toLocaleDateString(SPEECH[lang], { weekday: "long", month: "long", day: "numeric" });
+const holidays = {
+  id: "holidays",
+  test: {
+    en: /\b(?:public|bank|national)\s+holidays?\b|\b(?:next|upcoming)\s+holidays?\b|\bholidays? in\b/,
+    hi: /सार्वजनिक छुट्टी|अगली छुट्टी|छुट्टियाँ|छुट्टियां/, es: /días festivos|dias festivos|próximo festivo|proximo festivo|festivos en/,
+  },
+  async run(t, lang) {
+    const x = X[lang];
+    try {
+      let code = ((navigator.language || "en-US").split("-")[1] || "US").toUpperCase(), name = null;
+      const named = lang === "es" ? (t.match(/\ben\s+([\p{L}\p{M} .'-]+)$/u) || [])[1]
+        : lang === "hi" ? (t.match(/([\p{L}\p{M} ]+?)\s+(?:में|की)\s+(?:सार्वजनिक|अगली|छुट्टी)/u) || [])[1]
+        : (t.match(/\b(?:in|for|of)\s+([\p{L}\p{M} .'-]+)$/u) || [])[1];
+      if (named && !/^(?:the )?(?:year|world|week|month)$/.test(named.trim())) {
+        const c = await findCountry(named.trim(), lang);
+        if (!c) return { text: x.holNone(named.trim()), tone: "no" };
+        code = c.iso2Code; name = niceCountry(c.name);
+      }
+      const r = await fetch(`https://date.nager.at/api/v3/NextPublicHolidays/${code}`);
+      if (r.status === 204 || !r.ok) return { text: x.holNone(name || code), tone: "no" };
+      const list = (await r.json()).slice(0, 3).map(hol => x.holItem(lang === "es" ? hol.localName || hol.name : hol.name, dateOf(hol.date, lang)));
+      const shown = name || (await countries().then(l => (l.find(c => c.iso2Code === code) || {}).name).catch(() => null)) || code;
+      return { text: x.holOut(niceCountry(shown), list.join("; ")), tone: "yes" };
+    } catch { return { text: x.holFail, tone: "no" }; }
+  },
+};
+
+const prettyPop = (n, lang) => { const x = X[lang]; const r = v => (Math.round(v * 10) / 10).toString(); return n >= 1e9 ? x.billions(r(n / 1e9)) : n >= 1e6 ? x.millions(r(n / 1e6)) : x.thousands(Math.round(n / 1e3)); };
+const country = {
+  id: "country",
+  test: {
+    en: /\b(?:capital|population) of\s+\S|\bcountry facts?\b|\bfacts? about (?:the )?(?:country|nation)\b/, hi: /की राजधानी|की आबादी|की जनसंख्या/, es: /capital de\s+\S|población de\s+\S|poblacion de\s+\S/,
+  },
+  async run(t, lang) {
+    const x = X[lang];
+    const name = lang === "en" ? (t.match(/(?:capital|population) of (?:the )?([\p{L}\p{M} .'-]+)|(?:country facts?|facts? about (?:the )?(?:country|nation))\s+(?:of |about )?([\p{L}\p{M} .'-]+)/u) || []).slice(1).find(Boolean)
+      : lang === "hi" ? (t.match(/([\p{L}\p{M} ]+?)\s+की\s+(?:राजधानी|आबादी|जनसंख्या)/u) || [])[1]
+      : (t.match(/(?:capital|población|poblacion) de (?:la |el |los )?([\p{L}\p{M} .'-]+)/u) || [])[1];
+    if (!name) return { text: x.ctyFail, tone: "no" };
+    try {
+      const c = await findCountry(name.trim(), lang);
+      if (!c) return wikiFor(name.trim(), lang);
+      let pop = null; // the population service is flaky for some countries; answer without it rather than fail
+      try {
+        const pj = await getJSON(`https://api.worldbank.org/v2/country/${c.iso2Code}/indicator/SP.POP.TOTL?format=json&mrv=1`);
+        pop = pj[1] && pj[1][0] && pj[1][0].value;
+      } catch { /* leave it out */ }
+      return { text: x.ctyOut(niceCountry(c.name), c.capitalCity, c.region.value.trim(), pop ? prettyPop(pop, lang) : "", (c.incomeLevel && c.incomeLevel.value) || "").replace(/\s+/g, " "), tone: "yes" };
+    } catch { return { text: x.ctyFail, tone: "no" }; }
+  },
+};
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -1013,7 +1195,7 @@ INTENTS.find(i => i.id === "weather").test.en = /\b(weather|forecast|temperature
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(history, quake, iss, holidays, country, briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once
