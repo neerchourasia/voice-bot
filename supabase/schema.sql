@@ -7,8 +7,12 @@ create table if not exists public.user_data (
   todo       jsonb not null default '[]'::jsonb,
   reminders  jsonb not null default '[]'::jsonb,
   settings   jsonb not null default '{}'::jsonb,
+  memory     jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Already ran an earlier version of this file? Add the new column (safe to run again):
+alter table public.user_data add column if not exists memory jsonb not null default '{}'::jsonb;
 
 -- Row-level security: each person can only ever read or change their own row.
 alter table public.user_data enable row level security;

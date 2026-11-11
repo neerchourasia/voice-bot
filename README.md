@@ -58,6 +58,15 @@ Notes on how it behaves:
 - Reminders ring only while a tab is open. One that came due while no tab was open is shown as "Missed while you were away" the next time it loads.
 - Free Supabase projects pause after a week without activity, so the first login afterwards can be slow or fail until you resume the project.
 
+## What it remembers about you
+"My favorite color is blue", "my birthday is June 3", "my name is Priya", "I live in Pune", "mom's birthday is March 5", then "what's my favorite color", "when is my birthday", "what do you know about me", "forget my favorite color". Your name is used in greetings, your city in the morning briefing, and flashcards are saved here too. It lives in your browser and, once signed in, in your account (so it follows you across devices). Signing out clears it from the browser.
+
+If you set up Supabase before this feature existed, run this once in the SQL Editor so memory can sync (everything else keeps working without it):
+
+```sql
+alter table public.user_data add column if not exists memory jsonb not null default '{}'::jsonb;
+```
+
 ## Admins
 Admins get a **🛡 Admin** button that lists every user with their sign-in method and last sign-in, and lets them **Block** (stops a person signing in, reversible) or **Delete** an account (permanent, removes their saved notes). Admins can't change themselves or each other.
 

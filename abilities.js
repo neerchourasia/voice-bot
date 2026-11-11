@@ -267,6 +267,26 @@ Object.assign(X.en.labels, { hangman: "play hangman", rps: "play rock paper scis
 Object.assign(X.hi.labels, { hangman: "हैंगमैन खेल", rps: "पत्थर कागज़ कैंची खेल", guess: "संख्या का अंदाज़ा लगाने का खेल खेल", mathquiz: "गणित क्विज़ करा", twister: "जीभ मरोड़ वाली पंक्ति बोल", wotd: "आज का शब्द बता", flashcards: "फ्लैशकार्ड चला" });
 Object.assign(X.es.labels, { hangman: "jugar al ahorcado", rps: "jugar a piedra, papel o tijera", guess: "jugar a adivinar un número", mathquiz: "hacerte un quiz de matemáticas", twister: "decir un trabalenguas", wotd: "decirte la palabra del día", flashcards: "usar tarjetas de estudio" });
 
+Object.assign(X.en, {
+  memSet: (k, v) => `Okay, I'll remember that your ${k} is ${v}.`, memName: n => `Nice to meet you, ${n}! I'll call you that.`, memCity: c => `Okay, I'll remember you live in ${c}.`,
+  memAsk: k => `I don't know your ${k} yet. Tell me: “my ${k} is …”.`, memIs: (k, v) => `Your ${k} is ${v}.`, memBirthIs: (k, v, d, l) => `Your ${k} is ${v}${d !== null ? (d === 0 ? ", that's today!" : d === 1 ? ", that's tomorrow!" : `, which is in ${d} days`) : ""}.`,
+  memForget: k => `Okay, I've forgotten your ${k}.`, memNoFact: k => `I don't have anything saved about your ${k}.`, memAllGone: "Okay, I've forgotten everything I knew about you.",
+  memNone: "I don't know anything about you yet. Try “my favorite color is blue”.", memKnow: (n, s) => `I know ${n} ${plural(n, "thing", "things")} about you: ${s}.`,
+});
+Object.assign(X.hi, {
+  memSet: (k, v) => `ठीक है, मैं याद रखूँगा कि आपका ${k} ${v} है।`, memName: n => `आपसे मिलकर अच्छा लगा, ${n}! अब मैं आपको यही बुलाऊँगा।`, memCity: c => `ठीक है, मैं याद रखूँगा कि आप ${c} में रहते हैं।`,
+  memAsk: k => `मुझे अभी आपका ${k} नहीं पता। बताइए: “मेरा ${k} … है”।`, memIs: (k, v) => `आपका ${k} ${v} है।`, memBirthIs: (k, v, d) => `आपका ${k} ${v} है${d !== null ? (d === 0 ? ", यानी आज!" : d === 1 ? ", यानी कल!" : `, यानी ${d} दिन बाद`) : ""}।`,
+  memForget: k => `ठीक है, मैंने आपका ${k} भुला दिया।`, memNoFact: k => `आपके ${k} के बारे में मेरे पास कुछ सेव नहीं है।`, memAllGone: "ठीक है, मैंने आपके बारे में सब कुछ भुला दिया।",
+  memNone: "मुझे अभी आपके बारे में कुछ नहीं पता। कहिए “मेरा पसंदीदा रंग नीला है”।", memKnow: (n, s) => `मैं आपके बारे में ${n} बातें जानता हूँ: ${s}।`,
+});
+Object.assign(X.es, {
+  memSet: (k, v) => `Vale, recordaré que tu ${k} es ${v}.`, memName: n => `¡Encantado, ${n}! Te llamaré así.`, memCity: c => `Vale, recordaré que vives en ${c}.`,
+  memAsk: k => `Todavía no sé tu ${k}. Dime: «mi ${k} es …».`, memIs: (k, v) => `Tu ${k} es ${v}.`, memBirthIs: (k, v, d) => `Tu ${k} es ${v}${d !== null ? (d === 0 ? ", ¡es hoy!" : d === 1 ? ", ¡es mañana!" : `, dentro de ${d} días`) : ""}.`,
+  memForget: k => `Vale, olvidé tu ${k}.`, memNoFact: k => `No tengo guardado nada sobre tu ${k}.`, memAllGone: "Vale, olvidé todo lo que sabía de ti.",
+  memNone: "Todavía no sé nada de ti. Prueba «mi color favorito es el azul».", memKnow: (n, s) => `Sé ${n} ${plural(n, "cosa", "cosas")} de ti: ${s}.`,
+});
+X.en.labels.memory = "remember things about you, like your favorite color or birthday"; X.hi.labels.memory = "आपके बारे में बातें याद रख, जैसे पसंदीदा रंग या जन्मदिन"; X.es.labels.memory = "recordar cosas sobre ti, como tu color favorito o tu cumpleaños";
+
 for (const l of ["en", "hi", "es"]) {
   Object.assign(T[l].labels, X[l].labels);
   T[l].chips.splice(2, 0, ...X[l].chips.slice(0, 1)); // "What can you do?" near the front
@@ -366,8 +386,9 @@ const countdown = {
   id: "countdown",
   test: { en: /\b(days? (until|till|to|left)|countdown to|how long (until|till))\b/, hi: /कितने दिन|दिन बाकी|दिन बचे/, es: /cuántos días|cuantos dias|faltan|falta para/ },
   run(t, lang) {
-    const r = parseTarget(t, lang);
-    return r ? { text: X[lang].cdOut(r.days, r.label), tone: "yes" } : { text: X[lang].cdNeed, tone: "yes" };
+    const birthday = /my birthday|mi cumpleaños|मेरा जन्मदिन/.test(t) && (memory().facts || {}).birthday;
+    const r = parseTarget(birthday ? norm(birthday) : t, lang);
+    return r ? { text: X[lang].cdOut(r.days, birthday ? { en: "your birthday", hi: "आपका जन्मदिन", es: "tu cumpleaños" }[lang] : r.label), tone: "yes" } : { text: X[lang].cdNeed, tone: "yes" };
   },
 };
 
@@ -1390,6 +1411,72 @@ AWAIT.cards = (t, lang, st) => {
   return { text: `${verdict} ${x.fcAsk(st.at + 2, nextCard.f)}`, tone: right ? "yes" : "no" };
 };
 
+// ---------- Remember you: name, home city, favorite things, birthdays (saved in memory, synced to your account) ----------
+window.preferredName = () => memory().name || "";
+const NOT_FACTS = /^(?:notes?|list|to-?do list|shopping list|reminders?|flash ?cards?|cards?|day|schedule|timer|stopwatch|battery|location|name|city|home city|नाम|शहर|nombre|ciudad)$/;
+const factLabel = k => k.replace(/\s+/g, " ").trim();
+const MEM = {
+  en: {
+    name: /^(?:my name is|call me|i am called|i'm called)\s+([\p{L}\p{M} .'-]{1,30})$/u, city: /^(?:i live in|my city is|i'm from|i am from)\s+([\p{L}\p{M} .'-]{1,40})$/u,
+    set: /^(?:remember (?:that )?)?(?:my|(?:[a-z]+'s)) ([a-z' -]{2,30}?) (?:is|are)\s+(.{1,60})$/, setOther: /^(?:remember (?:that )?)?([a-z]+(?:'s| s)) ([a-z' -]{2,30}?) (?:is|are)\s+(.{1,60})$/,
+    ask: /^(?:what(?:'s| is| are)|tell me|do you (?:know|remember)|when is)\s+(?:my|([a-z]+'s))\s+([a-z' -]{2,30})$/,
+    forget: /^forget (?:about )?my ([a-z' -]{2,30})$/, forgetAll: /^forget everything(?: about me)?$/, know: /\bwhat do you (?:know|remember) about me\b/,
+  },
+  hi: {
+    name: /^मेरा नाम\s+(.{1,30})\s+है$/, city: /^मैं\s+(.{1,40})\s+में रहता(?: हूँ| हूं)?$|^मैं\s+(.{1,40})\s+में रहती(?: हूँ| हूं)?$/,
+    set: /^मेरा\s+(.{2,30}?)\s+(\S+)\s+है$/, ask: /^मेरा\s+(.{2,30}?)\s+क्या है$/, forget: /^मेरा\s+(.{2,30}?)\s+भूल जाओ$/, forgetAll: /^सब कुछ भूल जाओ$/, know: /मेरे बारे में क्या जानते हो/,
+  },
+  es: {
+    name: /^(?:me llamo|mi nombre es)\s+([\p{L}\p{M} .'-]{1,30})$/u, city: /^(?:vivo en|soy de)\s+([\p{L}\p{M} .'-]{1,40})$/u,
+    set: /^mi ([\p{L}\p{M} ]{2,30}?) es\s+(?:el |la |un |una )?(.{1,60})$/u, ask: /^(?:cuál es|cual es|dime)\s+mi\s+([\p{L}\p{M} ]{2,30})$/u, forget: /^olvida mi ([\p{L}\p{M} ]{2,30})$/u,
+    forgetAll: /^olvida todo(?: sobre mí| sobre mi)?$/, know: /qué sabes de mí|que sabes de mi/,
+  },
+};
+function memoryMatch(t, lang) {
+  const r = MEM[lang]; if (!r) return null;
+  if (r.forgetAll.test(t)) return { kind: "forgetAll" };
+  if (r.know.test(t)) return { kind: "know" };
+  let m = t.match(r.forget); if (m && !NOT_FACTS.test(m[1].trim())) return { kind: "forget", key: factLabel(m[1]) };
+  if (r.name && (m = t.match(r.name))) return { kind: "name", value: m[1].trim() };
+  if (r.city && (m = t.match(r.city))) return { kind: "city", value: (m[1] || m[2]).trim() };
+  if ((m = t.match(r.ask))) { const owner = lang === "en" ? m[1] : null, key = factLabel(lang === "en" ? m[2] : m[1]); if (!NOT_FACTS.test(key)) return { kind: "ask", key: owner ? `${owner} ${key}` : key }; }
+  if (lang === "en" && (m = t.match(r.setOther))) { const key = `${m[1].replace(/ s$/, "'s")} ${factLabel(m[2])}`; if (!NOT_FACTS.test(m[2].trim())) return { kind: "set", key, value: m[3].trim() }; }
+  if ((m = t.match(r.set))) { const key = factLabel(m[1]); if (!NOT_FACTS.test(key) && !/^(?:notes?|list)$/.test(key)) return { kind: "set", key, value: m[2].trim() }; }
+  return null;
+}
+const daysUntilText = (value, lang) => { const r = parseTarget(norm(value), lang); return r ? r.days : null; };
+const titleCase = s => s.replace(/\b\p{L}/gu, c => c.toUpperCase());
+const shownValue = (k, v) => (/name|birthday|anniversary|city|town|friend|nombre|ciudad/.test(k) ? titleCase(v) : v); // what you said was lower-cased for matching
+const isDateKey = k => /birthday|anniversary|cumpleaños|जन्मदिन|जन्मदिवस/.test(k);
+const mem = {
+  id: "memory",
+  test: any(t => ["en", "hi", "es"].some(l => memoryMatch(t, l))),
+  async run(t, lang) {
+    const x = X[lang], hit = memoryMatch(t, lang) || memoryMatch(t, ["en", "hi", "es"].find(l => memoryMatch(t, l)));
+    const m = memory(); m.facts = m.facts || {};
+    switch (hit.kind) {
+      case "name": m.name = hit.value.replace(/\b\p{L}/gu, c => c.toUpperCase()); saveMemory(m); brain.user = m.name; return { text: x.memName(m.name), tone: "yes" };
+      case "city": { const r = await saveHome(hit.value, lang); return r.tone === "yes" ? { text: x.memCity(memory().city), tone: "yes" } : r; }
+      case "set": { const v = shownValue(hit.key, hit.value); m.facts[hit.key] = v; saveMemory(m); return { text: x.memSet(hit.key, v), tone: "yes" }; }
+      case "ask": {
+        const v = m.facts[hit.key] || Object.entries(m.facts).find(([k]) => k.includes(hit.key) || hit.key.includes(k) && k.length > 3)?.[1];
+        if (!v) return { text: x.memAsk(hit.key), tone: "no" };
+        return isDateKey(hit.key) ? { text: x.memBirthIs(hit.key, v, daysUntilText(v, lang)), tone: "yes" } : { text: x.memIs(hit.key, v), tone: "yes" };
+      }
+      case "forget": if (!(hit.key in m.facts)) return { text: x.memNoFact(hit.key), tone: "no" }; delete m.facts[hit.key]; saveMemory(m); return { text: x.memForget(hit.key), tone: "yes" };
+      case "forgetAll": { const keepCards = m.cards; saveMemory({ cards: keepCards }); brain.user = null; return { text: x.memAllGone, tone: "yes" }; }
+      case "know": {
+        const w = { en: ["name", "home city"], hi: ["नाम", "घर का शहर"], es: ["nombre", "ciudad"] }[lang];
+        const items = [m.name && `${w[0]} ${m.name}`, m.city && `${w[1]} ${m.city}`, ...Object.entries(m.facts).map(([k, v]) => `${k} ${v}`)].filter(Boolean);
+        return items.length ? { text: x.memKnow(items.length, items.join("; ")), tone: "yes" } : { text: x.memNone, tone: "no" };
+      }
+    }
+  },
+};
+// "who am I" also knows the name you told me, and "my birthday" works in the countdown.
+const whoamiRun = whoami.run;
+whoami.run = (t, lang) => (memory().name ? { text: X[lang].youAre(memory().name), tone: "yes" } : whoamiRun(t, lang));
+
 // ---------- Help ----------
 const help = {
   id: "help",
@@ -1404,7 +1491,7 @@ INTENTS.find(i => i.id === "weather").test.en = /\b(weather|forecast|temperature
 INTENTS.find(i => i.id === "search").test.en = /\b(search|look up|find out)\b/;
 
 // New abilities go first so e.g. "remind me" wins over the plain timer and "translate" over "say".
-INTENTS.unshift(hangman, rps, guessGame, mathQuiz, twister, wotd, flashcards, history, quake, iss, holidays, country, briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
+INTENTS.unshift(mem, hangman, rps, guessGame, mathQuiz, twister, wotd, flashcards, history, quake, iss, holidays, country, briefing, homecity, pomodoro, ambient, breathing, stop, again, followup, speed, switchLang, whoami, moon, stopwatch, countdown, remind, notes, todo, sun, translate, define, convert, help, fact, quote, riddle, trivia, pickNum, web, copy);
 
 // ---------- Open-ended chat (Gemini free tier) as the last resort ----------
 let chatOn = null; // unknown until we ask the server once

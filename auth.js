@@ -5,9 +5,9 @@
   const configured = Boolean(A.SUPABASE_URL && A.SUPABASE_ANON_KEY);
   const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js";
   const SYNCED_SETTINGS = ["wake", "lang", "rate", "pitch", "volume", "speakReplies", "autoListen", "abilities"]; // not "voice": voices differ per device
-  const LOCAL = { notes: "voicebot-notes", todo: "voicebot-todo", reminders: "voicebot-reminders" };
+  const LOCAL = { notes: "voicebot-notes", todo: "voicebot-todo", reminders: "voicebot-reminders", memory: "voicebot-memory" };
 
-  let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in", providers = true; // providers: any Google/GitHub button available
+  let sb = null, user = null, session = null, applying = false, saveTimer = null, mode = "in", providers = true, memoryColumn = true, warnedMemory = false; // providers: any Google/GitHub button available
   const required = () => configured && A.REQUIRE_LOGIN !== false;
 
   // Other scripts ask these questions.
@@ -19,6 +19,7 @@
     saveTimer = setTimeout(push, 800);
   };
 
+  const readMemory = () => { try { return JSON.parse(localStorage.getItem(LOCAL.memory)) || {}; } catch { return {}; } };
   const readLocal = key => { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } };
   const writeLocal = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* storage blocked */ } };
   const unionBy = (a, b, keyOf) => { const seen = new Set(), out = []; for (const x of [...(a || []), ...(b || [])]) { const k = keyOf(x); if (!seen.has(k)) { seen.add(k); out.push(x); } } return out; };
@@ -32,10 +33,17 @@
   async function push() {
     if (!user || !sb) return;
     const settings = {}; SYNCED_SETTINGS.forEach(k => (settings[k] = cfg[k]));
-    const { error } = await sb.from("user_data").upsert({
+    const row = {
       user_id: user.id, notes: readLocal(LOCAL.notes), todo: readLocal(LOCAL.todo), reminders: readLocal(LOCAL.reminders),
       settings, updated_at: new Date().toISOString(),
-    });
+    };
+    if (memoryColumn) row.memory = readMemory();
+    let { error } = await sb.from("user_data").upsert(row);
+    if (error && memoryColumn && /memory/i.test(error.message)) { // the memory column hasn't been added in Supabase yet: keep syncing everything else
+      memoryColumn = false; delete row.memory;
+      ({ error } = await sb.from("user_data").upsert(row));
+      if (!error && !warnedMemory) { warnedMemory = true; note("Your notes and settings are saved, but what I remember about you can't sync yet: run the new SQL from supabase/schema.sql in Supabase."); }
+    }
     if (error) note("Couldn't save to your account: " + error.message);
   }
 
@@ -48,6 +56,10 @@
         writeLocal(LOCAL.notes, unionBy(data.notes, readLocal(LOCAL.notes), x => x));
         writeLocal(LOCAL.todo, unionBy(data.todo, readLocal(LOCAL.todo), x => x));
         writeLocal(LOCAL.reminders, unionBy(data.reminders, readLocal(LOCAL.reminders), x => x.id));
+        if (data.memory) { // cloud wins on clashes; facts and flashcards from both sides are kept
+          const a = data.memory, b = readMemory();
+          writeLocal(LOCAL.memory, { ...b, ...a, facts: { ...(b.facts || {}), ...(a.facts || {}) }, cards: unionBy(a.cards, b.cards, c => c.f + "|" + c.b) });
+        }
         applySettings(data.settings || {});
       }
     } finally { applying = false; }
@@ -208,13 +220,14 @@
     const wasId = user && user.id;
     session = s; user = s ? s.user : null;
     renderBar();
-    brain.user = displayName() || null;
+    brain.user = (window.preferredName && window.preferredName()) || displayName() || null;
     window.dispatchEvent(new Event("auth-changed")); // lets admin.js check whether this person is an admin
     if (event === "PASSWORD_RECOVERY") { setMode("recover"); showOverlay(true); return; }
     if (user) {
       if (mode !== "recover") showOverlay(false);
       if (user.id !== wasId) { // sign-in (not just a token refresh)
         await pull();
+        brain.user = (window.preferredName && window.preferredName()) || displayName() || null; // the name you told me wins
         if (event === "SIGNED_IN") { const m = X[cfg.lang].welcome(displayName()); addMsg(m, "bot yes"); speak(m); }
         if (typeof autoStart === "function") autoStart();
       }
